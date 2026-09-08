@@ -1,0 +1,14 @@
+<Solution>
+  <Project Path="Optimize.App/OptimizePro.App.csproj" />
+  <Project Path="OptimizePro.Core/OptimizePro.Core.csproj" Id="b37bd2d7-9e4b-47a0-9f32-f8b4d7cf132e" />
+  <Project Path="OptimizePro.Data/OptimizePro.Data.csproj" Id="5661bebc-af80-4564-aa1d-5f2e5875f3b7" />
+  <Project Path="OptimizePro.Services/OptimizePro.Services.csproj" Id="9e08e153-27f8-4d8e-9d1f-a202a5ae0297" />
+  <Project Path="OptimizePro.Licenciamento/OptimizePro.Licenciamento.csproj" />
+  <Project Path="Ferramentas/GeradorDeLicenca/GeradorDeLicenca.csproj" />
+  <Project Path="Ferramentas/GeradorDeLicenca.UI/GeradorDeLicenca.UI.csproj" />
+  <Project Path="Ferramentas/VetorGpl/VetorGpl.csproj" />
+  <Project Path="tests/OptimizePro.Core.Tests/OptimizePro.Core.Tests.csproj" />
+  <Project Path="tests/OptimizePro.Data.Tests/OptimizePro.Data.Tests.csproj" />
+  <Project Path="tests/OptimizePro.Services.Tests/OptimizePro.Services.Tests.csproj" />
+  <Project Path="tests/OptimizePro.Licenciamento.Tests/OptimizePro.Licenciamento.Tests.csproj" />
+</Solution>

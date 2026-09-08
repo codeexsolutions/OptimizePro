@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Optimize.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+             x:Class="Optimize.App.Views.ProjetoEditorView"
+             x:DataType="vm:ProjetoEditorViewModel">
+
+    <ScrollViewer>
+        <StackPanel Spacing="20" MaxWidth="920" HorizontalAlignment="Stretch">
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Projeto" FontSize="26" FontWeight="Bold" />
+                <TextBlock Text="Peças do projeto, configuração de tecido e envio para o encaixe." FontSize="14" Opacity="0.65" />
+            </StackPanel>
+
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="Dados do projeto" FontSize="16" FontWeight="SemiBold" />
+
+                    <Grid ColumnDefinitions="2*,3*">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,16,0">
+                            <TextBlock Text="Nome do projeto" FontSize="12" Opacity="0.7" />
+                            <TextBox Text="{Binding Nome}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Observações (opcional)" FontSize="12" Opacity="0.7" />
+                            <TextBox Text="{Binding Observacoes}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*,*,*">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Largura do tecido (cm)" FontSize="12" Opacity="0.7" />
+                            <NumericUpDown Value="{Binding LarguraTecido}" Minimum="0" FormatString="0.0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Espaço/folga (cm)" FontSize="12" Opacity="0.7" />
+                            <NumericUpDown Value="{Binding Espaco}" Minimum="0" FormatString="0.0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Margem (cm)" FontSize="12" Opacity="0.7" />
+                            <NumericUpDown Value="{Binding Margem}" Minimum="0" FormatString="0.0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="3" Spacing="4">
+                            <TextBlock Text="Giro" FontSize="12" Opacity="0.7" />
+                            <ComboBox SelectedItem="{Binding Giro}" HorizontalAlignment="Stretch">
+                                <x:String>180</x:String>
+                                <x:String>fixa</x:String>
+                                <x:String>livre</x:String>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="Peças" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Content="+ Adicionar peça" Command="{Binding AdicionarPecaCommand}" />
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding Pecas}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                        CornerRadius="6" Padding="14" Margin="0,0,0,10">
+                                    <StackPanel Spacing="10">
+
+                                        <Grid ColumnDefinitions="2*,*,*,Auto">
+                                            <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,10,0">
+                                                <TextBlock Text="Nome" FontSize="11" Opacity="0.65" />
+                                                <TextBox Text="{Binding Nome}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,10,0">
+                                                <TextBlock Text="Largura (cm)" FontSize="11" Opacity="0.65" />
+                                                <NumericUpDown Value="{Binding Largura}" Minimum="0" FormatString="0.0" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Spacing="4" Margin="0,0,10,0">
+                                                <TextBlock Text="Altura (cm)" FontSize="11" Opacity="0.65" />
+                                                <NumericUpDown Value="{Binding Altura}" Minimum="0" FormatString="0.0" />
+                                            </StackPanel>
+                                            <Button Grid.Column="3" Content="Remover" VerticalAlignment="Bottom" FontSize="12"
+                                                    Command="{Binding $parent[UserControl].DataContext.RemoverPecaCommand}"
+                                                    CommandParameter="{Binding}" />
+                                        </Grid>
+
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                            <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,10,0" Width="90">
+                                                <TextBlock Text="Quantidade" FontSize="11" Opacity="0.65" />
+                                                <NumericUpDown Value="{Binding Quantidade}" Minimum="1" Maximum="999" FormatString="0" />
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Content="Escolher imagem" Click="EscolherImagem_OnClick"
+                                                    VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="0,0,10,0" />
+                                            <TextBlock Grid.Column="2" VerticalAlignment="Bottom" FontSize="12" Opacity="0.7"
+                                                       Text="{Binding NomeDoArquivoOriginal, TargetNullValue='Nenhuma imagem selecionada'}" />
+                                        </Grid>
+
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                    CornerRadius="4" Padding="10,8"
+                    IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding MensagemDeErro}" FontSize="12" TextWrapping="Wrap" />
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                <Button Content="Cancelar" Command="{Binding CancelarCommand}" />
+                <Button Content="Salvar projeto" Command="{Binding SalvarCommand}" IsEnabled="{Binding !Salvando}"
+                        Background="{DynamicResource SystemAccentColor}" Foreground="White" Padding="16,8" CornerRadius="4" />
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

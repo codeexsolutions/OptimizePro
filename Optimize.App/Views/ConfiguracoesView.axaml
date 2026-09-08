@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Optimize.App.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Optimize.App.Views.ConfiguracoesView"
+             x:DataType="vm:ConfiguracoesViewModel">
+
+    <ScrollViewer>
+        <StackPanel Spacing="20" MaxWidth="700" HorizontalAlignment="Stretch">
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Configurações" FontSize="26" FontWeight="Bold" />
+                <TextBlock Text="Preferências do disparo e exportação." FontSize="14" Opacity="0.65" />
+            </StackPanel>
+
+            <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                    CornerRadius="4" Padding="10,8"
+                    IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding MensagemDeErro}" FontSize="12" TextWrapping="Wrap" />
+            </Border>
+
+            <Border Background="{DynamicResource SystemFillColorSuccessBackgroundBrush}"
+                    CornerRadius="4" Padding="10,8"
+                    IsVisible="{Binding MensagemDeSucesso, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding MensagemDeSucesso}" FontSize="12" TextWrapping="Wrap" />
+            </Border>
+
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="Disparo" FontSize="16" FontWeight="SemiBold" />
+
+                    <Grid ColumnDefinitions="*,*">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Código do país padrão" FontSize="12" Opacity="0.7" />
+                            <TextBox Text="{Binding CodigoPaisPadrao}" Watermark="Ex.: 55" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="DDD padrão" FontSize="12" Opacity="0.7" />
+                            <TextBox Text="{Binding DddPadrao}" Watermark="Ex.: 11" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Mensagem padrão (use {{nome}} pra personalizar)" FontSize="12" Opacity="0.7" />
+                        <TextBox Text="{Binding MensagemPadraoDeDisparo}" AcceptsReturn="True" TextWrapping="Wrap" Height="70" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,*">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Delay mínimo entre envios (ms)" FontSize="12" Opacity="0.7" />
+                            <NumericUpDown Value="{Binding DelayMinimoMs}" Minimum="0" FormatString="0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Delay máximo entre envios (ms)" FontSize="12" Opacity="0.7" />
+                            <NumericUpDown Value="{Binding DelayMaximoMs}" Minimum="0" FormatString="0" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}" CornerRadius="4" Padding="10,8">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ui:SymbolIcon Symbol="ImportantFilled" FontSize="12" />
+                            <TextBlock FontSize="12" TextWrapping="Wrap"
+                                       Text="O Disparo está em stand-by — vai virar captação de lead (envio pra uma base separada), não envio em massa pelo WhatsApp." />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="Exportação" FontSize="16" FontWeight="SemiBold" />
+                    <StackPanel Spacing="4" MaxWidth="240">
+                        <TextBlock Text="DPI padrão de exportação" FontSize="12" Opacity="0.7" />
+                        <NumericUpDown Value="{Binding DpiPadraoDeExportacao}" Minimum="1" FormatString="0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Button Content="Salvar configurações" Command="{Binding SalvarCommand}" IsEnabled="{Binding !Salvando}"
+                    Background="{DynamicResource SystemAccentColor}" Foreground="White" Padding="16,8" CornerRadius="4"
+                    HorizontalAlignment="Right" />
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,390 @@
+﻿
+GUIA TÉCNICO
+Melhorias para aumentar o
+aproveitamento do encaixe
+Catálogo de ideias, arquitetura-alvo, experimentos e roadmap para o projeto optimize-full
+
+Objetivo Reduzir o consumo de tecido sem comprometer a validade geométrica, a folga de produção ou a previsibilidade do tempo de busca.
+---------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+Escopo | Conteúdo
+-------+---------
+Motores | Contorno, retângulo, vãos, faixas, NFP e híbridos
+Otimização | Candidatos, fitness, ordens, famílias, mutações e busca local
+Aprendizado | Rede neural como rankeador, dados, validação e alocação de orçamento
+Qualidade | Sobreposição, folga, benchmarks, regressão e métricas de produção
+
+
+Baseado na leitura da arquitetura e do código atual em D:\servidores\novo\optmize-full.
+
+
+1. RESUMO EXECUTIVO
+O motor atual já possui uma base forte: disputa entre receitas, busca paralela, preservação de famílias, heurísticas de fundo e vazio, repescagem em vãos e aceleração por WebAssembly. O maior potencial não está em substituir tudo por NFP ou rede neural, mas em montar um portfólio de especialistas e distribuir melhor o tempo entre eles.
+
+Princípio central O vencedor final deve continuar sendo escolhido por validade geométrica, quantidade de peças encaixadas e menor consumo. Métricas auxiliares e rede neural devem guiar a busca, não redefinir o objetivo de produção.
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+As dez ações de maior prioridade
+  Corrigir os rótulos de treino: somente a campeã final deve ser vitória; usar distância para a campeã como alvo contínuo.
+  Adicionar quantidade de cópias, distribuição por família e área total às características do trabalho.
+  Reservar pelo menos um worker sem poda neural como grupo de controle e fonte de diversidade.
+  Dar sementes e papéis diferentes a cada worker: explorar, refinar, famílias, NFP e controle.
+  Usar contato, fragmentação, vãos e skyline como score auxiliar e desempate, mantendo consumo como objetivo final.
+  Gerar top-K posições candidatas por peça, em vez de conservar apenas a melhor decisão gulosa local.
+  Aplicar busca local no campeão: remover/reinserir peças críticas, trocar rotações e reconstruir o rabo do encaixe.
+  Reintroduzir NFP apenas como gerador de candidatos, sempre validado pela máscara discreta.
+  Criar cache de pares de formas, rotações, blocos e deslocamentos de contato.
+  Medir tudo por tempo fixo, sementes múltiplas, consumo mediano, pior caso e taxa de sobreposição zero.
+
+2. COMO MEDIR APROVEITAMENTO CORRETAMENTE
+Aproveitamento não é uma única métrica. O sistema deve separar o objetivo comercial, o geométrico e o computacional para evitar melhorias aparentes que apenas escondem uma perda em outro ponto.
+
+Métrica | Fórmula ou leitura | Uso
+--------+--------------------+----
+Consumo | comprimento final do rolo | Objetivo principal a minimizar
+Aproveitamento real | área real / (largura × consumo) | Comparação entre trabalhos
+Peças não encaixadas | contagem e área | Restrição lexicográfica prioritária
+Folga | distância mínima entre máscaras expandidas | Restrição de produção
+Vão preso | área vazia fechada por peças acima | Potencial perdido
+Fragmentação | componentes e distribuição do espaço vazio | Guia de busca
+Skyline | média, desvio, picos e variação do perfil | Guia de busca e previsão
+Velocidade | tentativas/s e tempo até o melhor | Eficiência do orçamento
+
+
+  - Comparar sempre com o mesmo orçamento de tempo e hardware.
+  - Usar pelo menos 5 sementes; preferir mediana e pior caso, não apenas a melhor corrida.
+  - Separar ganho médio, ganho por classe de trabalho e regressões individuais.
+  - Toda melhoria deve manter zero sobreposição e respeitar a folga solicitada.
+
+
+3. GERAÇÃO DE POSIÇÕES CANDIDATAS
+A decisão mais limitante hoje é escolher uma única posição local por unidade. Mesmo com uma boa ordem, uma escolha gulosa pode fechar o vão necessário para peças futuras. A melhoria estrutural é fazer o motor produzir vários candidatos plausíveis e deixar a busca escolher entre eles.
+
+3.1 Top-K candidatos por unidade
+  - Guardar as K melhores posições de cada rotação e forma, não apenas a primeira.
+  - Deduplicar candidatos equivalentes pela caixa final, perfil produzido ou assinatura do tecido.
+  - Manter diversidade: melhor fundo, menor vazio, maior contato, menor pico e candidato exploratório aleatório.
+  - Usar K adaptativo: 4 em lotes grandes; 16 a 64 em peças críticas ou trabalhos pequenos.
+  - Aplicar beam search curto: conservar B estados parciais durante as primeiras peças ou no rabo do encaixe.
+
+3.2 Fontes de candidatos
+
+Fonte | Ideia | Cuidado
+------+-------+--------
+Perfil | mínimos locais e pontos onde o suporte muda | barato e compatível com WASM
+Contato | alinhar bordas/células da peça com bordas ocupadas | validar folga na máscara
+NFP | vértices, extremos e interseções de NFPs | não confiar sem validação discreta
+Vãos | cantos e pisos de componentes vazios | priorizar vãos reaproveitáveis
+Skyline | vales, degraus e bordas de platôs | evitar candidatos quase idênticos
+Histórico | posições relativas de encaixes vencedores | normalizar por passo e largura
+
+
+
+3.3 Look-ahead
+  - Testar cada candidato com a próxima peça antes de confirmar a atual.
+  - Usar look-ahead apenas nas primeiras N unidades, nas peças grandes e nas decisões empatadas.
+  - Aproximar o futuro por envelope de tamanhos, sem encaixar todo o restante.
+  - Aplicar rollout curto: 2 a 5 peças seguintes com heurística barata.
+
+4. FITNESS E SCORES AUXILIARES
+O resultado final deve continuar lexicográfico: menos peças de fora e menor consumo. O score composto entra para ordenar candidatos, mutações e estados parciais.
+
+Estrutura recomendada final = (não encaixadas, consumo). Busca = consumo estimado + vazio preso + fragmentação + picos + penalidade de baixa diversidade - contato útil.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+Componente | Como medir | Quando usar
+-----------+------------+------------
+Consumo estimado | fundo atual + limite inferior do restante | sempre
+Vazio morto | área sob peça inacessível ao motor | posição local
+Vão preso | componentes vazios sem acesso pelo topo | soluções competitivas
+Fragmentação | número de componentes ponderado por área | desempate e beam search
+Contato útil | borda compartilhada respeitando folga | candidatos NFP/contato
+Rugosidade | variação absoluta do perfil | desempate leve
+Pico | altura máxima local e largura do pico | evitar caudas estreitas
+Potencial de vão | compatibilidade entre vãos e peças restantes | look-ahead
+
+
+Os pesos devem ser aprendidos ou calibrados por experimentos; não devem ser escolhidos apenas por intuição. Começar com normalização por área e largura do tecido evita que um termo domine os demais por unidade de medida.
+
+
+5. FAMÍLIAS E DIVERSIDADE DE ESTRATÉGIA
+A ordem por família existente é valiosa, mas pode virar um especialista completo. Isso permite preservar sua identidade, medir seu desempenho e impedir que a rede ou uma ordem compartilhada a transforme silenciosamente em outra estratégia.
+
+5.1 Especialistas recomendados
+
+Especialista | Comportamento
+-------------+--------------
+Misturado global | todas as unidades podem trocar de posição
+Famílias em bloco | troca, reinserção e inversão de blocos inteiros
+Famílias alternadas | intercala grandes e pequenas para preencher vãos
+Maior família primeiro | estabiliza o padrão dominante
+Família rara primeiro | evita que peças difíceis sobrem no final
+Colunas/faixas | preserva padrões repetitivos por largura
+Sem rede | controle exploratório com orçamento garantido
+
+
+
+5.2 Operadores por família
+  - Trocar dois blocos inteiros.
+  - Mover um bloco para outra posição.
+  - Inverter um intervalo de blocos.
+  - Dividir temporariamente uma família em dois blocos.
+  - Mesclar famílias com caixas ou proporções compatíveis.
+  - Enumerar todas as permutações quando houver poucas famílias.
+
+5.3 Diversidade entre workers
+  - Semente independente por worker e por rodada.
+  - Papéis fixos ou alternados: exploração forte, refinamento, famílias, vãos, NFP e controle.
+  - Arquivo de elites por especialista; não deixar um único campeão apagar todas as linhagens.
+  - Compartilhar apenas elites compactas, não sincronizar todas as decisões aleatórias.
+
+6. REDE NEURAL E MEMÓRIA
+A rede deve funcionar como rankeador e alocador de orçamento. Ela não deve ser responsável por validar geometria nem eliminar definitivamente uma classe de solução sem evidência estatística forte.
+
+6.1 Correções imediatas
+  - Rotular como vencedora somente a receita campeã final.
+  - Preferir alvo contínuo baseado na distância percentual até a campeã.
+  - Adicionar total de cópias, distribuição das quantidades e área total às features.
+  - Separar conjunto de treino e validação por trabalho/assinatura, nunca por receita individual.
+  - Medir recall da campeã no top-3, top-5 e acima do limiar de poda.
+  - Contar maturidade em trabalhos independentes, não em linhas de receita.
+
+6.2 Features novas
+
+Grupo | Características
+------+----------------
+Quantidade | total de cópias, famílias, média/desvio/máximo por família
+Geometria | ocupação, proporção, concavidade, componentes, perímetro/área
+Compatibilidade | pares de larguras, rotações possíveis, similaridade entre famílias
+Tecido | largura útil, passo, folga, margem e granularidade
+Dificuldade | área total/largura, maior peça/largura, dispersão de tamanhos
+Histórico | desempenho por motor, agrupamento e família em trabalhos próximos
+
+
+
+6.3 Alocação de orçamento
+Em vez de cortar receitas abaixo de um valor fixo, distribuir tempo proporcionalmente ao ranking, com pisos de exploração.
+  - 50–65% para as receitas melhor ranqueadas.
+  - 20–30% para especialistas que foram bons na execução atual.
+  - 10–20% para exploração uniforme e worker sem rede.
+  - Aumentar exploração quando a rede estiver incerta ou fora da distribuição conhecida.
+
+
+7. NFP SEGURO E ÚTIL
+O NFP antigo apresentou sobreposição porque uma silhueta com múltiplos componentes não era representada integralmente. A volta segura não é reativar o motor antigo, e sim usar o NFP como fonte limitada de candidatos, com validação obrigatória pela grade.
+
+7.1 Arquitetura sugerida
+  Extrair todos os componentes conectados da máscara, incluindo ilhas e furos relevantes.
+  Gerar NFP por par de componentes e rotação, com cache.
+  Selecionar vértices, extremos, interseções e amostras espaçadas do contorno.
+  Converter o candidato para a grade do motor.
+  Validar colisão e folga por máscara/bitset; candidato inválido é descartado.
+  Pontuar candidatos válidos por fundo, fragmentação, contato e potencial futuro.
+
+7.2 Entrada gradual
+
+Fase | Escopo | Critério para avançar
+-----+--------+----------------------
+A | NFP somente para montar duplas | zero sobreposição e ganho medido
+B | unidades cruzadas e peças côncavas | ganho por segundo positivo
+C | top-K candidatos durante encaixe | não piorar pior caso
+D | especialista NFP completo | vantagem clara em uma classe de trabalho
+
+
+
+Regra de segurança Nenhuma posição NFP entra no resultado sem passar pela mesma validação discreta usada pelo motor e pela bancada de sobreposição.
+---------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+8. BUSCA LOCAL E PÓS-PROCESSAMENTO
+Depois que uma solução boa aparece, costuma ser mais eficiente repará-la do que reiniciar todo o encaixe. O pós-processamento deve concentrar esforço no fim do rolo, nos maiores vãos e nas peças que criaram mais desperdício.
+  - Tail rebuild: remover as últimas 5–20% das peças e encaixá-las novamente em ordens diferentes.
+  - Ruin-and-recreate: remover peças ao redor do maior vão e reconstruir a região.
+  - Troca de rotação: testar rotações alternativas das peças críticas.
+  - Swap e 2-opt: trocar duas unidades ou inverter um intervalo da ordem.
+  - Large Neighborhood Search: destruir uma região escolhida por desperdício e reconstruí-la.
+  - Compaction pass: tentar deslocar peças para cima/esquerda sem alterar a ordem global.
+  - Repescagem iterativa: repetir enquanto houver ganho, com limite curto de tempo.
+  - Reparo guiado por contribuição marginal: priorizar a peça cuja retirada libera mais espaço útil.
+
+9. AGRUPAMENTOS E BLOCOS
+
+Ideia | Descrição | Risco
+------+-----------+------
+Duplas adaptativas | escolher deslocamento entre cópias pelo melhor contato | cache pode crescer
+Blocos mistos | combinar peças complementares de famílias diferentes | explosão combinatória
+Blocos de 2–4 | biblioteca de padrões locais reutilizáveis | bloco grande perde flexibilidade
+Superpeças | tratar padrão comprovado como unidade durante parte da busca | pode esconder vãos
+Desmontagem | permitir quebrar bloco quando ele não cabe bem | aumenta estados
+Pareamento aprendido | rankeador prevê quais pares têm bom potencial | exige dados confiáveis
+
+
+
+
+10. LIMITES INFERIORES E PODA SEGURA
+Uma busca melhora tanto encontrando soluções boas quanto desistindo cedo de estados que não podem vencer.
+  - Limite por área: área restante / largura útil.
+  - Limite por largura: peças que não compartilham a mesma faixa.
+  - Limite por famílias incompatíveis em rotação ou largura.
+  - Poda de estado parcial quando fundo atual + limite restante já perde da elite.
+  - Memoização de perfis equivalentes com a mesma multiconjunto de peças restantes.
+  - Dominância: descartar estado com perfil e fundo piores que outro com as mesmas peças colocadas.
+
+Cuidado Poda geométrica baseada em limite inferior comprovado é segura. Poda neural é probabilística e deve conservar uma fresta de exploração.
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+11. ROTAÇÃO E ORIENTAÇÃO
+  - Ordenar rotações por compatibilidade com o vão atual, e não por ordem fixa.
+  - Gerar rotações apenas geometricamente distintas; eliminar simetrias equivalentes.
+  - Usar rotação como parte da mutação local, não apenas na colocação inicial.
+  - Criar especialista agressivo em rotação e outro conservador para direção do fio.
+  - Respeitar restrições de produção como regra rígida, nunca como penalidade pequena.
+
+12. PRECISÃO DA GRADE E REPRESENTAÇÃO
+
+Melhoria | Benefício
+---------+----------
+Grade adaptativa | passo grosso na exploração e fino no refinamento
+Refino local | recalcular apenas em torno dos melhores candidatos
+Bitsets | colisão de máscara por palavras de 32/64 bits
+RLE por linha | compressão e interseção rápida em máscaras esparsas
+Assinatura de forma | cache entre cópias e peças geometricamente iguais
+Quantização consistente | evitar divergência entre tela, motor, PDF e validação
+
+
+
+13. PERFORMANCE QUE SE CONVERTE EM APROVEITAMENTO
+Velocidade só importa quando vira mais diversidade ou mais refinamento no mesmo tempo. Cada otimização deve mostrar ganho em tentativas por segundo e, depois, ganho de consumo sob orçamento fixo.
+  - Mover top-K, métricas simples e colisão por bitset para WASM somente após estabilizar a lógica.
+  - Cachear formas, sondas, pares, contatos, NFPs e blocos por rotação.
+  - Evitar objetos e alocações dentro dos laços quentes.
+  - Medir receita por receita; retirar do caminho normal as que não têm nicho comprovado.
+  - Adaptar K, salto e profundidade ao tamanho do lote e ao tempo restante.
+  - Treinar a rede fora do pedido HTTP ou por lote quando o histórico crescer.
+
+
+14. BENCHMARK E PREVENÇÃO DE REGRESSÕES
+
+14.1 Portfólio mínimo de trabalhos
+  - Peças quase retangulares.
+  - Peças muito côncavas.
+  - Silhuetas com múltiplos componentes.
+  - Poucas famílias com muitas cópias.
+  - Muitas famílias com poucas cópias.
+  - Mistura extrema de tamanhos.
+  - Peças estreitas e compridas.
+  - Peças com giro livre e giro restrito.
+  - Lotes pequenos e lotes acima de 200 peças.
+
+14.2 Relatório por experimento
+
+Campo | Exigência
+------+----------
+Configuração | commit, hardware, tempo, workers, passo e parâmetros
+Qualidade | consumo, aproveitamento, não encaixadas, folga e sobreposição
+Distribuição | mínimo, mediana, média, máximo e desvio em várias sementes
+Velocidade | tentativas/s, tempo até o melhor e custo da passada base
+Especialistas | vencedor e melhor consumo por motor/família
+Rede | top-K recall, calibração e campeãs cortadas
+
+
+
+14.3 Critérios de aceite
+  - Zero sobreposição real e zero violação de folga no conjunto de regressão.
+  - Ganho mediano positivo no portfólio e regressão máxima previamente definida.
+  - Resultado reproduzível com sementes registradas.
+  - Tempo limite respeitado inclusive durante passada base e polimento.
+  - Fallback correto quando WASM, rede ou NFP não estiver disponível.
+
+15. OBSERVABILIDADE E APRENDIZADO CONTÍNUO
+  - Registrar consumo por especialista e por etapa da busca.
+  - Guardar melhor solução por marco de tempo: 100 ms, 500 ms, 1 s, 5 s e final.
+  - Registrar por que uma receita foi podada e se ela era campeã histórica.
+  - Medir diversidade real entre workers por distância das ordens e dos perfis.
+  - Detectar mudança de distribuição: formatos novos, larguras novas e quantidades fora do histórico.
+  - Manter versão das features e da rede para invalidar pesos incompatíveis.
+  - Guardar apenas métricas e geometria necessária, preservando dados de cliente.
+
+16. CATÁLOGO DE IDEIAS AVANÇADAS
+
+Técnica | Aplicação possível
+--------+-------------------
+Beam search | manter vários estados parciais promissores
+MCTS | explorar decisões iniciais com rollouts curtos
+LNS | reconstruir regiões ruins de uma solução elite
+Algoritmo genético | população de ordens com nichos por especialista
+Bandit contextual | alocar tempo entre receitas conforme o trabalho
+Learning to rank | ordenar receitas/candidatos por ganho esperado
+Imitation learning | aprender padrões relativos de encaixes campeões
+Surrogate model | prever potencial de um estado parcial antes de completá-lo
+CP-SAT/MILP local | resolver exatamente uma pequena região ou o rabo
+Portfolio scheduling | realocar workers conforme progresso observado
+
+
+Essas técnicas só devem entrar depois que o benchmark, os rótulos e as métricas básicas estiverem confiáveis. Caso contrário, aumentam a complexidade sem permitir saber de onde veio o ganho.
+
+
+17. ROADMAP RECOMENDADO
+
+Etapa | Entrega | Impacto esperado | Risco
+------+---------+------------------+------
+1 | Corrigir treino e features de quantidade | alto | baixo
+2 | Sementes/papéis por worker e fatia sem rede | alto | baixo
+3 | Benchmark estatístico e telemetria | indireto, essencial | baixo
+4 | Top-K candidatos e score auxiliar | muito alto | médio
+5 | Tail rebuild e ruin-and-recreate | alto | médio
+6 | Especialistas de família e novos operadores | médio/alto | baixo
+7 | NFP para duplas com validação por máscara | médio | médio
+8 | Beam search curto e look-ahead | alto em lotes menores | médio/alto
+9 | Bitsets/WASM e caches avançados | ganho de orçamento | médio
+10 | Bandit contextual e alocação dinâmica | alto com dados | alto
+
+
+
+Plano de 30 dias
+  Semana 1: corrigir rótulos, features, versionamento da rede e testes unitários.
+  Semana 2: implementar seeds/papéis por worker, worker sem rede e relatório por especialista.
+  Semana 3: protótipo top-K com fundo/vazio/contato; medir K=4, 8 e 16.
+  Semana 4: tail rebuild no campeão e comparação estatística com baseline congelado.
+
+18. MAPA DOS PONTOS RELEVANTES NO CÓDIGO
+
+Arquivo/função | Uso na evolução
+---------------+----------------
+public/encaixe-motor.js: melhorPosicaoDaUnidade | top-K, contato, skyline e candidatos
+public/encaixe-motor.js: melhorQue | manter objetivo final lexicográfico
+public/encaixe-motor.js: receitasBase | novos especialistas e portfólio
+public/encaixe-motor.js: baguncarFamilias | novos operadores de blocos
+public/encaixe-motor.js: buscarMelhorEncaixe | orçamento, elites e busca local
+public/encaixe-rede.js: vetorDoTrabalho | features de quantidade e dificuldade
+encaixe-memoria.js: montarExemplosDeTreino | rótulos e validação da rede
+public/encaixe-paralelo.js | sementes, papéis e realocação de workers
+bancada/conferir-sobreposicao.js | barreira obrigatória de segurança
+bancada/medir.js | benchmark estatístico e relatório
+
+
+
+19. CHECKLIST ANTES DE INCORPORAR UMA MELHORIA
+  - Existe hipótese clara de por que reduzirá consumo?
+  - Há baseline congelado e comando reproduzível?
+  - Foram usadas várias sementes e orçamento igual?
+  - A melhoria ganhou na mediana e não apenas na melhor corrida?
+  - O pior caso ficou dentro do limite aceitável?
+  - Sobreposição e folga continuam zeradas?
+  - O ganho vem de melhor busca ou apenas de mais tempo?
+  - O código possui fallback e parâmetro para desligar a novidade?
+  - A nova receita tem um nicho comprovado no portfólio?
+  - A documentação registra o resultado, inclusive quando a ideia perde?
+
+Conclusão O caminho com maior probabilidade de ganho é: dados corretos para a rede, diversidade real entre especialistas, múltiplos candidatos geométricos e busca local sobre soluções elites. NFP entra como ferramenta de contato segura; a rede entra como alocadora de orçamento; o consumo real continua sendo o juiz final.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+

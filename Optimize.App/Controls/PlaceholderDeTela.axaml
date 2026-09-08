@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="500"
+             x:Class="Optimize.App.Controls.PlaceholderDeTela"
+             x:Name="Root">
+    <Grid>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="18" MaxWidth="440">
+            <Border Width="76" Height="76" CornerRadius="18"
+                    Background="{DynamicResource SystemAccentColor}"
+                    Opacity="0.14" HorizontalAlignment="Center" />
+            <ui:SymbolIcon Symbol="{Binding #Root.Icone}"
+                           FontSize="34"
+                           Foreground="{DynamicResource SystemAccentColor}"
+                           HorizontalAlignment="Center"
+                           Margin="0,-64,0,0" />
+
+            <StackPanel Spacing="8" Margin="0,16,0,0">
+                <TextBlock Text="{Binding #Root.Titulo}" FontSize="22" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding #Root.Descricao}" FontSize="14" Opacity="0.65"
+                           TextWrapping="Wrap" TextAlignment="Center" LineHeight="20" />
+            </StackPanel>
+
+            <Border Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}"
+                    CornerRadius="4" Padding="10,5" HorizontalAlignment="Center" Margin="0,6,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <ui:SymbolIcon Symbol="ImportantFilled" FontSize="12" />
+                    <TextBlock Text="Aguardando a camada de Services (Optimize.Services)" FontSize="12" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl>

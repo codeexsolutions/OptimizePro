@@ -1,0 +1,132 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Optimize.App.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+             x:Class="Optimize.App.Views.MoldeWizardView"
+             x:DataType="vm:MoldeWizardViewModel">
+
+    <ScrollViewer>
+        <StackPanel Spacing="20" MaxWidth="920" HorizontalAlignment="Stretch">
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Novo molde" FontSize="26" FontWeight="Bold" />
+                <TextBlock Text="Cada peça vem de um arquivo DXF, PLT, SVG ou PDF vetorial — a medida sempre do próprio arquivo."
+                           FontSize="14" Opacity="0.65" />
+            </StackPanel>
+
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="Dados do molde" FontSize="16" FontWeight="SemiBold" />
+                    <Grid ColumnDefinitions="2*,3*">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,16,0">
+                            <TextBlock Text="Nome do molde" FontSize="12" Opacity="0.7" />
+                            <TextBox Text="{Binding Nome}" Watermark="Ex.: Camiseta básica" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Observações (opcional)" FontSize="12" Opacity="0.7" />
+                            <TextBox Text="{Binding Observacoes}" Watermark="Notas internas sobre este molde" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="Peças" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Content="+ Adicionar peça" Command="{Binding AdicionarPecaCommand}" />
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding Pecas}">
+                        <ItemsControl.ItemTemplate>
+                            <!-- Sem x:DataType de propósito: os bindings $parent[UserControl].DataContext.* abaixo
+                                 (Papeis/RemoverPecaCommand) não resolvem sob binding compilado nesta versão do
+                                 Avalonia — confirmado via captura de tela + UI Automation (ComboBox ficava com 0
+                                 itens). Binding clássico (reflection) resolve certo. -->
+                            <DataTemplate>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                        CornerRadius="6" Padding="14" Margin="0,0,0,10">
+                                    <StackPanel Spacing="10">
+
+                                        <Grid ColumnDefinitions="*,*,*,*,Auto">
+                                            <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,10,0">
+                                                <TextBlock Text="Papel" FontSize="11" Opacity="0.65" />
+                                                <!-- Lista fixa dos 12 papéis (§4.2/§8.3) hardcoded aqui de propósito —
+                                                     evita um binding indireto (via $parent) que não resolvia a tempo
+                                                     de pré-selecionar o valor default (confirmado via UI Automation). -->
+                                                <ComboBox SelectedItem="{Binding Papel}" HorizontalAlignment="Stretch">
+                                                    <x:String>frente</x:String>
+                                                    <x:String>costas</x:String>
+                                                    <x:String>manga direita</x:String>
+                                                    <x:String>manga esquerda</x:String>
+                                                    <x:String>manga</x:String>
+                                                    <x:String>gola</x:String>
+                                                    <x:String>punho</x:String>
+                                                    <x:String>cós</x:String>
+                                                    <x:String>bolso</x:String>
+                                                    <x:String>vista</x:String>
+                                                    <x:String>forro</x:String>
+                                                    <x:String>outro</x:String>
+                                                </ComboBox>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,10,0">
+                                                <TextBlock Text="Nome" FontSize="11" Opacity="0.65" />
+                                                <TextBox Text="{Binding Nome}" Watermark="opcional" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Spacing="4" Margin="0,0,10,0">
+                                                <TextBlock Text="Tamanho" FontSize="11" Opacity="0.65" />
+                                                <TextBox Text="{Binding Tamanho}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="3" Spacing="4" Margin="0,0,10,0">
+                                                <TextBlock Text="Quantidade" FontSize="11" Opacity="0.65" />
+                                                <NumericUpDown Value="{Binding Quantidade}" Minimum="1" Maximum="999" FormatString="0" />
+                                            </StackPanel>
+                                            <Button Grid.Column="4" Content="Remover" VerticalAlignment="Bottom" FontSize="12"
+                                                    Command="{Binding $parent[UserControl].DataContext.RemoverPecaCommand}"
+                                                    CommandParameter="{Binding}" />
+                                        </Grid>
+
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                            <Button Grid.Column="0" Content="Escolher arquivo" Click="EscolherArquivo_OnClick" Margin="0,0,10,0" />
+                                            <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" Opacity="0.7"
+                                                       Text="{Binding NomeDoArquivo, TargetNullValue='Nenhum arquivo selecionado ainda'}" />
+                                            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="12" Opacity="0.6"
+                                                       Text="{Binding Origem}" Margin="0,0,10,0" />
+                                            <Border Grid.Column="3" VerticalAlignment="Center" CornerRadius="10" Padding="8,3"
+                                                    Background="{DynamicResource SystemAccentColor}" IsVisible="{Binding TemContorno}">
+                                                <TextBlock FontSize="11" Foreground="White">
+                                                    <Run Text="{Binding Largura}" /><Run Text=" × " /><Run Text="{Binding Altura}" /><Run Text=" cm" />
+                                                </TextBlock>
+                                            </Border>
+                                        </Grid>
+
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                    CornerRadius="4" Padding="10,8"
+                    IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding MensagemDeErro}" FontSize="12" TextWrapping="Wrap" />
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                <Button Content="Cancelar" Command="{Binding CancelarCommand}" />
+                <Button Content="Salvar molde" Command="{Binding SalvarCommand}" IsEnabled="{Binding !Salvando}"
+                        Background="{DynamicResource SystemAccentColor}" Foreground="White" Padding="16,8" CornerRadius="4" />
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

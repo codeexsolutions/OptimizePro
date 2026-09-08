@@ -1,0 +1,12 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Optimize.App.ViewModels"
+             xmlns:controls="using:Optimize.App.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Optimize.App.Views.MoldeArteEnvioView"
+             x:DataType="vm:MoldeArteEnvioViewModel">
+    <controls:PlaceholderDeTela Icone="ImageEdit" Titulo="Arte e encaixe"
+        Descricao="Estampas e ajuste de arte/rapport dentro do contorno de cada peça, antes de mandar para o encaixe." />
+</UserControl>

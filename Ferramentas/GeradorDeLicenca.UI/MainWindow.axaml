@@ -1,0 +1,88 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="620" d:DesignHeight="680"
+        x:Class="GeradorDeLicenca.UI.MainWindow"
+        Title="Gerador de Licença — OptimizePro (uso interno)"
+        Width="640" Height="700"
+        WindowStartupLocation="CenterScreen">
+
+    <ScrollViewer Padding="24">
+        <StackPanel Spacing="20">
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Gerador de Licença" FontSize="22" FontWeight="Bold" />
+                <TextBlock Text="Ferramenta interna — NUNCA distribuir junto com o app do cliente. Ela manuseia a chave privada."
+                           FontSize="12" Foreground="OrangeRed" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- ===================== Passo 1: chave ===================== -->
+            <Border Background="{DynamicResource SystemChromeMediumLowColor}" CornerRadius="6" Padding="16">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="1. Chave de assinatura" FontWeight="Bold" FontSize="15" />
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.8"
+                               Text="Gere o par de chaves UMA vez e guarde a privada em local seguro (fora deste repositório). A chave pública impressa aqui deve ser colada em LicencaService.ChavePublicaBase64, no código do app cliente." />
+
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto" >
+                        <TextBox Grid.Column="0" x:Name="CaminhoDaChaveBox" Watermark="Caminho da chave privada (.pem)" />
+                        <Button Grid.Column="1" Margin="8,0,0,0" Content="Procurar..." Click="SelecionarChaveExistente_Click" />
+                    </Grid>
+
+                    <Button Content="Gerar novo par de chaves..." Click="GerarChave_Click" HorizontalAlignment="Left" />
+
+                    <TextBox x:Name="ChavePublicaBox" Watermark="Chave pública aparece aqui após gerar"
+                             IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="60"
+                             FontFamily="Consolas,Cascadia Mono,monospace" FontSize="11" IsVisible="False" />
+                    <Button x:Name="CopiarChavePublicaBtn" Content="Copiar chave pública" Click="CopiarChavePublica_Click"
+                            HorizontalAlignment="Left" IsVisible="False" />
+                </StackPanel>
+            </Border>
+
+            <!-- ===================== Passo 2: código ===================== -->
+            <Border Background="{DynamicResource SystemChromeMediumLowColor}" CornerRadius="6" Padding="16">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="2. Gerar código de licença" FontWeight="Bold" FontSize="15" />
+
+                    <TextBlock Text="Cliente (nome ou e-mail)" FontSize="12" Opacity="0.8" />
+                    <TextBox x:Name="ClienteBox" Watermark="ex.: cliente@exemplo.com" />
+
+                    <Grid ColumnDefinitions="*,*" >
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+                            <TextBlock Text="Validade (dias)" FontSize="12" Opacity="0.8" />
+                            <NumericUpDown x:Name="DiasUpDown" Minimum="1" Maximum="3650" Value="30" FormatString="0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Tipo" FontSize="12" Opacity="0.8" />
+                            <ComboBox x:Name="TipoCombo" SelectedIndex="0" HorizontalAlignment="Stretch">
+                                <ComboBoxItem Content="Pago" />
+                                <ComboBoxItem Content="Teste" />
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+
+                    <WrapPanel Orientation="Horizontal">
+                        <Button Content="7 dias (teste)" Margin="0,0,8,0" Click="AtalhoTeste7Dias_Click" />
+                        <Button Content="30 dias (mensal)" Click="AtalhoMensal30Dias_Click" />
+                    </WrapPanel>
+
+                    <Button Content="Gerar código" Click="GerarCodigo_Click"
+                            Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0,10" />
+
+                    <TextBox x:Name="ResultadoBox" Watermark="Código gerado aparece aqui"
+                             IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="70"
+                             FontFamily="Consolas,Cascadia Mono,monospace" FontSize="13" IsVisible="False" />
+                    <Button x:Name="CopiarCodigoBtn" Content="Copiar código" Click="CopiarCodigo_Click"
+                            HorizontalAlignment="Left" IsVisible="False" />
+                </StackPanel>
+            </Border>
+
+            <Border x:Name="MensagemDeErroBorder" Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}" CornerRadius="6" Padding="12"
+                    IsVisible="False">
+                <TextBlock x:Name="MensagemDeErro" TextWrapping="Wrap" FontSize="12" />
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Window>

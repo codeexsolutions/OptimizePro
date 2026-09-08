@@ -1,0 +1,29 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:styling="using:FluentAvalonia.Styling"
+             x:Class="Optimize.App.App"
+             xmlns:local="using:Optimize.App"
+             RequestedThemeVariant="Default">
+             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- Paleta laranja da marca Optimize — substitui o azul padrão do Fluent (§ referências visuais do app original). -->
+            <Color x:Key="SystemAccentColor">#F2762E</Color>
+            <Color x:Key="SystemAccentColorLight1">#F58F52</Color>
+            <Color x:Key="SystemAccentColorLight2">#F8A876</Color>
+            <Color x:Key="SystemAccentColorLight3">#FBC29B</Color>
+            <Color x:Key="SystemAccentColorDark1">#D45F1D</Color>
+            <Color x:Key="SystemAccentColorDark2">#B84D12</Color>
+            <Color x:Key="SystemAccentColorDark3">#9C3D0A</Color>
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <styling:FluentAvaloniaTheme />
+    </Application.Styles>
+</Application>

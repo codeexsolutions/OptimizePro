@@ -1,0 +1,107 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Optimize.App.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="650"
+             x:Class="Optimize.App.Views.ProjetosView"
+             x:DataType="vm:ProjetosViewModel">
+
+    <StackPanel Spacing="20">
+        <StackPanel Spacing="4">
+            <TextBlock Text="Projetos" FontSize="26" FontWeight="Bold" />
+            <TextBlock Text="Organize os projetos de cada cliente — trabalho que se repete." FontSize="14" Opacity="0.65" />
+        </StackPanel>
+
+        <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                CornerRadius="4" Padding="10,8"
+                IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding MensagemDeErro}" FontSize="12" TextWrapping="Wrap" />
+        </Border>
+
+        <Grid ColumnDefinitions="320,*">
+
+            <!-- Coluna de clientes -->
+            <Border Grid.Column="0" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                    CornerRadius="8" Padding="16" Margin="0,0,16,0">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Clientes" FontSize="15" FontWeight="SemiBold" />
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Grid.Column="0" Text="{Binding NovoClienteNome}" Watermark="Nome do novo cliente" Margin="0,0,8,0" />
+                        <Button Grid.Column="1" Content="+" Command="{Binding CriarClienteCommand}" />
+                    </Grid>
+
+                    <TextBlock Text="Nenhum cliente cadastrado ainda." FontSize="12" Opacity="0.6"
+                               IsVisible="{Binding !TemClientes}" TextWrapping="Wrap" />
+
+                    <ListBox ItemsSource="{Binding Clientes}" SelectedItem="{Binding ClienteSelecionado}"
+                             Background="Transparent" BorderThickness="0" Padding="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="{Binding Nome}" FontWeight="SemiBold" FontSize="13" />
+                                        <TextBlock FontSize="11" Opacity="0.6"
+                                                   Text="{Binding TotalProjetos, StringFormat='{}{0} projeto(s)'}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="✕" FontSize="11" Padding="6,2"
+                                            Command="{Binding $parent[UserControl].DataContext.ExcluirClienteCommand}"
+                                            CommandParameter="{Binding}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </Border>
+
+            <!-- Coluna de projetos do cliente selecionado -->
+            <Border Grid.Column="1" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                    CornerRadius="8" Padding="16">
+                <StackPanel Spacing="12">
+
+                    <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding TituloProjetos}" />
+
+                    <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding TemClienteSelecionado}">
+                        <TextBox Grid.Column="0" Text="{Binding NovoProjetoNome}" Watermark="Nome do novo projeto" Margin="0,0,8,0" />
+                        <Button Grid.Column="1" Content="+ Novo projeto" Command="{Binding CriarProjetoCommand}"
+                                Background="{DynamicResource SystemAccentColor}" Foreground="White" Padding="12,6" CornerRadius="4" />
+                    </Grid>
+
+                    <TextBlock Text="Este cliente ainda não tem projetos." FontSize="12" Opacity="0.6"
+                               IsVisible="{Binding MostrarClienteSemProjetos}" />
+
+                    <ItemsControl ItemsSource="{Binding ProjetosDoCliente}" IsVisible="{Binding TemProjetos}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                        CornerRadius="6" Padding="14,10" Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                        <ui:SymbolIcon Grid.Column="0" Symbol="Document"
+                                                       Foreground="{DynamicResource SystemAccentColor}"
+                                                       VerticalAlignment="Center" Margin="0,0,12,0" />
+                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Nome}" FontWeight="SemiBold" FontSize="14" />
+                                            <TextBlock FontSize="12" Opacity="0.6"
+                                                       Text="{Binding TotalPecas, StringFormat='{}{0} peça(s)'}" />
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Content="Abrir" FontSize="12" Margin="0,0,8,0"
+                                                Command="{Binding $parent[UserControl].DataContext.AbrirProjetoCommand}"
+                                                CommandParameter="{Binding}" />
+                                        <Button Grid.Column="3" Content="Excluir" FontSize="12"
+                                                Command="{Binding $parent[UserControl].DataContext.ExcluirProjetoCommand}"
+                                                CommandParameter="{Binding}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+        </Grid>
+    </StackPanel>
+</UserControl>

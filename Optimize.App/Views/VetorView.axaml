@@ -1,0 +1,122 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Optimize.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="750"
+             x:Class="Optimize.App.Views.VetorView"
+             x:DataType="vm:VetorViewModel">
+
+    <ScrollViewer>
+        <StackPanel Spacing="20" MaxWidth="1100" HorizontalAlignment="Stretch">
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Vetor" FontSize="26" FontWeight="Bold" />
+                <TextBlock Text="Transforme uma imagem em traço vetorial (SVG) — ideal pra estampas prontas pra corte." FontSize="14" Opacity="0.65" />
+            </StackPanel>
+
+            <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                    CornerRadius="4" Padding="10,8"
+                    IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding MensagemDeErro}" FontSize="12" TextWrapping="Wrap" />
+            </Border>
+
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                        <Button Grid.Column="0" Content="Escolher imagem" Click="EscolherImagem_OnClick" Margin="0,0,10,0" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" Opacity="0.7"
+                                   Text="{Binding NomeDoArquivo, TargetNullValue='Nenhuma imagem selecionada ainda'}" />
+                        <ProgressBar Grid.Column="2" IsIndeterminate="True" Width="80" Margin="0,0,10,0" IsVisible="{Binding Processando}" />
+                        <Button Grid.Column="3" Content="Salvar como PDF" Click="SalvarPdf_OnClick" IsEnabled="{Binding TemResultado}" />
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Chapada" Command="{Binding AplicarChapadaCommand}" />
+                        <Button Content="Silhueta" Command="{Binding AplicarSilhuetaCommand}" />
+                        <Button Content="Sombra" Command="{Binding AplicarSombraCommand}" />
+                        <Button Content="Fino" Command="{Binding AplicarFinoCommand}" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,*,*,*,*,*">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Cores" FontSize="12" Opacity="0.7" />
+                            <NumericUpDown Value="{Binding Cores}" Minimum="1" Maximum="32" FormatString="0" />
+                            <TextBlock FontSize="10" Opacity="0.6" TextWrapping="Wrap"
+                                       IsVisible="{Binding SugestaoDeCores, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                       Text="{Binding SugestaoDeCores, StringFormat='sugestão automática p/ esta imagem: {0}'}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Detalhe" FontSize="12" Opacity="0.7" />
+                            <NumericUpDown Value="{Binding Detalhe}" Minimum="0" FormatString="0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Suavidade" FontSize="12" Opacity="0.7" />
+                            <NumericUpDown Value="{Binding Suavidade}" Minimum="0" FormatString="0.0" Increment="0.5" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="3" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Quina (graus)" FontSize="12" Opacity="0.7" />
+                            <NumericUpDown Value="{Binding QuinaGraus}" Minimum="0" Maximum="180" FormatString="0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="4" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Tensão" FontSize="12" Opacity="0.7" />
+                            <NumericUpDown Value="{Binding Tensao}" Minimum="0" Maximum="2" FormatString="0.0" Increment="0.1" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="5" Spacing="4">
+                            <TextBlock Text="Juntar sombras" FontSize="12" Opacity="0.7" />
+                            <NumericUpDown Value="{Binding JuntarSombras}" Minimum="0" Maximum="100" FormatString="0" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Spacing="20">
+                        <CheckBox Content="Redondas (círculo/elipse)" IsChecked="{Binding Redondas}" />
+                        <CheckBox Content="Subpixel (anti-aliasing)" IsChecked="{Binding Subpixel}" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="2">
+                        <CheckBox Content="Usar motor externo (Potrace) — melhor pra arte complexa/degradê" IsChecked="{Binding UsarMotorExterno}" />
+                        <TextBlock FontSize="10" Opacity="0.6" TextWrapping="Wrap" Margin="24,0,0,0"
+                                   Text="Precisa do executável VetorGpl publicado ao lado do app (não vem embutido por licença GPL) — se não encontrar, a mensagem de erro abaixo explica." />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Grid ColumnDefinitions="*,*" IsVisible="{Binding TemImagem}">
+                <Border Grid.Column="0" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        CornerRadius="6" Padding="12" Margin="0,0,10,0" MinHeight="300">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="Original" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <Image Source="{Binding ImagemOriginal}" Stretch="Uniform" />
+                    </DockPanel>
+                </Border>
+
+                <Border Grid.Column="1" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        CornerRadius="6" Padding="12" MinHeight="300">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="Vetorizado (SVG)" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <Viewbox Stretch="Uniform">
+                            <Border Width="{Binding LarguraPx}" Height="{Binding AlturaPx}" Background="White">
+                                <ItemsControl ItemsSource="{Binding Camadas}"
+                                              Width="{Binding LarguraPx}" Height="{Binding AlturaPx}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <Canvas />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Path Data="{Binding Caminho}" Fill="{Binding Cor}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                        </Viewbox>
+                    </DockPanel>
+                </Border>
+            </Grid>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

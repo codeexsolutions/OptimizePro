@@ -1,0 +1,395 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Optimize.App.ViewModels"
+             xmlns:conv="using:Optimize.App.Converters"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
+             x:Class="Optimize.App.Views.EncaixeView"
+             x:DataType="vm:EncaixeViewModel"
+             DragDrop.AllowDrop="True">
+
+    <!--
+        Layout em duas colunas (§9.3, "área de configuração ao lado da área de resultado" —
+        igual à referência original): esquerda estreita e fixa com tecido/arquivos/giro, direita
+        larga com progresso/resultado/desenho. Cada coluna rola por conta própria — assim a
+        lista de arquivos não empurra o resultado pra fora da tela nem vice-versa.
+    -->
+    <Grid RowDefinitions="Auto,*">
+
+        <StackPanel Grid.Row="0" Spacing="4" Margin="20,20,20,16">
+            <TextBlock Text="Encaixe" FontSize="26" FontWeight="Bold" />
+            <TextBlock Text="Arraste os moldes ou as artes pra cá, configure o tecido e busque o melhor aproveitamento." FontSize="14" Opacity="0.65" />
+        </StackPanel>
+
+        <Grid Grid.Row="1" ColumnDefinitions="440,*" Margin="20,0,20,20">
+
+            <!-- Coluna esquerda: configuração (tecido/espaço/margem, giro, arquivos). -->
+            <ScrollViewer Grid.Column="0" Margin="0,0,16,0">
+                <StackPanel Spacing="16">
+
+                    <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                            CornerRadius="4" Padding="10,8"
+                            IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="{Binding MensagemDeErro}" FontSize="12" TextWrapping="Wrap" />
+                    </Border>
+
+                    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="16">
+                        <StackPanel Spacing="12">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Tecido, espaço e leitura dos arquivos" FontSize="15" FontWeight="SemiBold" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Limpar" Command="{Binding LimparArquivosCommand}" IsEnabled="{Binding TemArquivos}" />
+                                    <Button Content="+ Adicionar" Click="AdicionarArquivos_OnClick" IsEnabled="{Binding !CarregandoArquivos}"
+                                            Background="{DynamicResource SystemAccentColor}" Foreground="White" CornerRadius="4" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <Grid ColumnDefinitions="*,*,*">
+                                <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,6,0">
+                                    <TextBlock Text="Largura (cm)" FontSize="11" Opacity="0.7" />
+                                    <NumericUpDown Value="{Binding LarguraTecidoCm}" Minimum="10" FormatString="0.0" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,6,0">
+                                    <TextBlock Text="Espaço (mm)" FontSize="11" Opacity="0.7" />
+                                    <NumericUpDown Value="{Binding EspacoMm}" Minimum="0" FormatString="0.0" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="4">
+                                    <TextBlock Text="Margem (cm)" FontSize="11" Opacity="0.7" />
+                                    <NumericUpDown Value="{Binding MargemCm}" Minimum="0" FormatString="0.0" />
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Buscar por (segundos)" FontSize="11" Opacity="0.7" />
+                                <NumericUpDown Value="{Binding TempoDeBuscaSegundos}" Minimum="1" Maximum="120" FormatString="0" HorizontalAlignment="Stretch" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Como encaixar" FontSize="11" Opacity="0.7" />
+                                <ComboBox ItemsSource="{Binding OpcoesDeModo}" SelectedItem="{Binding ModoDeEncaixe}" HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={x:Static conv:ModoDeEncaixeParaRotuloConverter.Instancia}}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Giro de todas as peças" FontSize="11" Opacity="0.7" />
+                                <ComboBox ItemsSource="{Binding OpcoesDeGiro}" SelectedItem="{Binding GiroDeTodasAsPecas}" HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={x:Static conv:TipoDeGiroParaRotuloConverter.Instancia}}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Unidade do molde" FontSize="11" Opacity="0.7" />
+                                <ComboBox ItemsSource="{Binding OpcoesDeUnidade}" SelectedItem="{Binding UnidadeDoMolde}" HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={x:Static conv:UnidadeDoMoldeParaRotuloConverter.Instancia}}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Como ler o vetor" FontSize="11" Opacity="0.7" />
+                                <ComboBox ItemsSource="{Binding OpcoesDeLeituraDoVetor}" SelectedItem="{Binding ModoDeLeituraDoVetor}" HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={x:Static conv:ModoLeituraVetorParaRotuloConverter.Instancia}}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <CheckBox IsChecked="{Binding AgruparPecasIguais}" Content="Agrupar peças iguais antes de encaixar" />
+                                <TextBlock Text="(teste: encaixa cada tipo de peça isolado — todas as frentes juntas, depois todas as costas etc. — em vez de misturar tudo numa busca só)"
+                                           FontSize="11" Opacity="0.6" TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="16"
+                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1"
+                                    IsVisible="{Binding !TemArquivos}">
+                                <TextBlock Text="Arraste os moldes ou as artes pra cá (DXF, PLT, SVG, PDF, PNG ou JPG)." FontSize="12" Opacity="0.6" HorizontalAlignment="Center" TextWrapping="Wrap" />
+                            </Border>
+
+                            <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12"
+                                    IsVisible="{Binding CarregandoArquivos}">
+                                <StackPanel Spacing="6">
+                                    <TextBlock FontSize="12">
+                                        <Run Text="Carregando arquivo " /><Run Text="{Binding ArquivosProcessados}" /><Run Text=" de " /><Run Text="{Binding ArquivosParaProcessar}" /><Run Text="…" />
+                                    </TextBlock>
+                                    <ProgressBar Minimum="0" Maximum="{Binding ArquivosParaProcessar}" Value="{Binding ArquivosProcessados}" Height="6" />
+                                </StackPanel>
+                            </Border>
+
+                            <ItemsControl ItemsSource="{Binding Arquivos}">
+                                <ItemsControl.ItemTemplate>
+                                    <!-- Sem x:DataType de propósito, e RemoverArquivoCommand via
+                                         $parent[UserControl].DataContext (sem cast) — mesmo padrão do resto do
+                                         app (MoldesView/ProjetosView/MoldeWizardView): x:DataType nesta template
+                                         quebra a resolução de tipo do binding clássico em runtime (AVLN2000 não
+                                         pega no build, só falha ao abrir a tela de verdade). -->
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,0,0,8" Spacing="4">
+                                            <TextBlock Text="{Binding Nome}" FontSize="13" />
+                                            <TextBlock FontSize="11" Opacity="0.6">
+                                                <Run Text="{Binding Largura}" /><Run Text=" × " /><Run Text="{Binding Altura}" /><Run Text=" cm · " /><Run Text="{Binding Origem}" />
+                                            </TextBlock>
+                                            <TextBlock Text="qtd do nome" FontSize="10" Opacity="0.5" FontStyle="Italic" IsVisible="{Binding QuantidadeVeioDoNome}" />
+                                            <Grid ColumnDefinitions="*,Auto,Auto">
+                                                <ComboBox Grid.Column="0" Margin="0,0,6,0"
+                                                          ItemsSource="{Binding $parent[UserControl].DataContext.OpcoesDeGiroPorPeca}"
+                                                          SelectedItem="{Binding Giro}" HorizontalAlignment="Stretch">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Converter={x:Static conv:TipoDeGiroParaRotuloConverter.Instancia}}" FontSize="12" />
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                                <NumericUpDown Grid.Column="1" Value="{Binding Quantidade}" Minimum="0" Maximum="999" FormatString="0" Width="120" Margin="0,0,6,0" />
+                                                <Button Grid.Column="2" Content="×" Command="{Binding $parent[UserControl].DataContext.RemoverArquivoCommand}" CommandParameter="{Binding}" />
+                                            </Grid>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Button Content="Fazer encaixe" Command="{Binding FazerEncaixeCommand}" IsEnabled="{Binding !EmBusca}"
+                                        Background="{DynamicResource SystemAccentColor}" Foreground="White" Padding="16,8" CornerRadius="4" />
+                                <Button Content="Parar e usar este" Command="{Binding PararCommand}" IsEnabled="{Binding EmBusca}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Coluna direita: progresso da busca + resultado (métricas, régua/tecido, "como foi feito"). -->
+            <ScrollViewer Grid.Column="1">
+                <StackPanel Spacing="16">
+
+                    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="20" IsVisible="{Binding EmBusca}">
+                        <StackPanel Spacing="10">
+                            <StackPanel Orientation="Horizontal" Spacing="16">
+                                <TextBlock FontSize="13">
+                                    <Run Text="{Binding Tentativas}" /><Run Text=" tentativa(s)" />
+                                </TextBlock>
+                                <TextBlock FontSize="13" Opacity="0.8">
+                                    <Run Text="melhor até agora: " /><Run Text="{Binding MelhorConsumoCm, StringFormat={}{0:0.0}}" /><Run Text=" cm" />
+                                </TextBlock>
+                            </StackPanel>
+                            <ProgressBar IsIndeterminate="True" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="20" IsVisible="{Binding TemResultado}">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="Resultado" FontSize="16" FontWeight="SemiBold" />
+
+                            <Border Background="{DynamicResource SystemFillColorCautionBackgroundBrush}" CornerRadius="6" Padding="14"
+                                    IsVisible="{Binding TemMelhorGuardado}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center">
+                                        <Run Text="O melhor encaixe já conseguido com estas mesmas peças gastou " />
+                                        <Run FontWeight="Bold" Text="{Binding MelhorGuardadoConsumoCm, StringFormat={}{0:0.00}}" /><Run Text=" cm" />
+                                        <Run Text=" — este saiu " />
+                                        <Run FontWeight="Bold" Text="{Binding Resultado.ConsumoCm, StringFormat={}{0:0.00}}" /><Run Text=" cm." />
+                                    </TextBlock>
+                                    <Button Grid.Column="1" Content="Usar o melhor de antes" Command="{Binding UsarMelhorDeAntesCommand}" Margin="10,0,0,0" />
+                                </Grid>
+                            </Border>
+
+                            <StackPanel Orientation="Horizontal" Spacing="24">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Consumo" FontSize="11" Opacity="0.6" />
+                                    <TextBlock FontSize="18" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColor}">
+                                        <Run Text="{Binding Resultado.ConsumoCm, StringFormat={}{0:0.0}}" /><Run Text=" cm" />
+                                    </TextBlock>
+                                </StackPanel>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Aproveitamento" FontSize="11" Opacity="0.6" />
+                                    <TextBlock FontSize="18" FontWeight="Bold">
+                                        <Run Text="{Binding Resultado.AproveitamentoPercentual, StringFormat={}{0:0.0}}" /><Run Text="%" />
+                                    </TextBlock>
+                                </StackPanel>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Tentativas" FontSize="11" Opacity="0.6" />
+                                    <TextBlock FontSize="18" FontWeight="Bold" Text="{Binding Resultado.Tentativas}" />
+                                </StackPanel>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Não encaixadas" FontSize="11" Opacity="0.6" />
+                                    <TextBlock FontSize="18" FontWeight="Bold" Text="{Binding Resultado.ItensNaoEncaixados.Count}" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <TextBlock FontSize="11" Opacity="0.5" Text="{Binding Resultado.ReceitaVencedora, StringFormat='receita: {0}'}" />
+
+                            <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="16">
+                                <StackPanel Spacing="10">
+                                    <Grid ColumnDefinitions="*,*,*">
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <TextBlock Text="LARGURA INFORMADA DO TECIDO" FontSize="10" Opacity="0.6" />
+                                            <TextBlock FontSize="16" FontWeight="Bold">
+                                                <Run Text="{Binding LarguraTecidoCm, StringFormat={}{0:0.0}}" /><Run Text=" cm" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="2">
+                                            <TextBlock Text="LARGURA OCUPADA PELO ENCAIXE" FontSize="10" Opacity="0.6" />
+                                            <TextBlock FontSize="16" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColor}">
+                                                <Run Text="{Binding LarguraOcupadaCm, StringFormat={}{0:0.0}}" /><Run Text=" cm" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Spacing="2">
+                                            <TextBlock Text="SOBRA LATERAL TOTAL" FontSize="10" Opacity="0.6" />
+                                            <TextBlock FontSize="16" FontWeight="Bold">
+                                                <Run Text="{Binding SobraTotalCm, StringFormat={}{0:0.0}}" /><Run Text=" cm" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <StackPanel Orientation="Horizontal" Height="10">
+                                        <Border Width="{Binding BarraEsquerdaPx}" Background="Transparent" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,1,0,1" />
+                                        <Border Width="{Binding BarraOcupadaPx}" Background="{DynamicResource SystemAccentColor}" CornerRadius="2" />
+                                        <Border Width="{Binding BarraDireitaPx}" Background="Transparent" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,1,0,1" />
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="20">
+                                        <TextBlock FontSize="11" Opacity="0.7">
+                                            <Run Text="Esquerda: " /><Run FontWeight="Bold" Text="{Binding SobraEsquerdaCm, StringFormat={}{0:0.0}}" /><Run Text=" cm" />
+                                        </TextBlock>
+                                        <TextBlock FontSize="11" Opacity="0.7">
+                                            <Run Text="Peças: " /><Run FontWeight="Bold" Text="{Binding LarguraOcupadaCm, StringFormat={}{0:0.0}}" /><Run Text=" cm" />
+                                        </TextBlock>
+                                        <TextBlock FontSize="11" Opacity="0.7">
+                                            <Run Text="Direita: " /><Run FontWeight="Bold" Text="{Binding SobraDireitaCm, StringFormat={}{0:0.0}}" /><Run Text=" cm" />
+                                        </TextBlock>
+                                    </StackPanel>
+
+                                    <TextBlock FontSize="11" Opacity="0.6">
+                                        <Run Text="Se centralizar o conjunto no tecido: " /><Run FontWeight="Bold" Text="{Binding SobraCentralizadaCm, StringFormat={}{0:0.0}}" /><Run Text=" cm de cada lado." />
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+
+                            <Expander Header="Como este encaixe foi feito">
+                                <StackPanel Spacing="10" Margin="0,10,0,0">
+                                    <Grid ColumnDefinitions="*,*,*">
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <TextBlock Text="ÁREA DAS PEÇAS" FontSize="10" Opacity="0.6" />
+                                            <TextBlock FontSize="14" FontWeight="Bold">
+                                                <Run Text="{Binding AreaDasPecasM2, StringFormat={}{0:0.00}}" /><Run Text=" m²" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="2">
+                                            <TextBlock Text="SOBRA DE TECIDO" FontSize="10" Opacity="0.6" />
+                                            <TextBlock FontSize="14" FontWeight="Bold">
+                                                <Run Text="{Binding SobraDeTecidoM2, StringFormat={}{0:0.00}}" /><Run Text=" m²" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Spacing="2">
+                                            <TextBlock Text="FORA DO TECIDO" FontSize="10" Opacity="0.6" />
+                                            <TextBlock FontSize="14" FontWeight="Bold" Text="{Binding Resultado.ItensNaoEncaixados.Count}" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock Text="{Binding ResumoDoEncaixe}" FontSize="12" TextWrapping="Wrap" Opacity="0.85" />
+                                </StackPanel>
+                            </Expander>
+
+                            <!--
+                                Fundo escuro "de mesa de corte" contrastando com o retângulo claro do
+                                tecido + réguas em cm/m alinhadas na MESMA escala px/cm das peças (§9.3,
+                                "aparecer como se fosse réguas e um fundo com contraste identificando
+                                onde é o tecido") — sem isso a peça ficava boiando sem noção de escala
+                                nem de onde acaba o rolo de verdade.
+                            -->
+                            <Border Background="#1B1B1B" CornerRadius="6" Padding="12">
+                                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" MaxHeight="640">
+                                    <Grid ColumnDefinitions="28,Auto" RowDefinitions="20,Auto">
+
+                                        <!-- Canto morto onde as duas réguas se encontram. -->
+                                        <Border Grid.Row="0" Grid.Column="0" Background="#1B1B1B" />
+
+                                        <!-- Régua horizontal (topo) — traço curto a cada 10cm, traço + rótulo a cada 50cm/1m. -->
+                                        <Canvas Grid.Row="0" Grid.Column="1" Width="{Binding CanvasLarguraPx}" Height="20" Background="#232323">
+                                            <ItemsControl ItemsSource="{Binding ReguaHorizontal}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Canvas>
+                                                            <Rectangle Width="1" Height="{Binding Maior, Converter={x:Static conv:MaiorParaAlturaDeTracoConverter.Instancia}}"
+                                                                       Fill="#8A8A8A" Canvas.Left="{Binding PosicaoPx}" Canvas.Bottom="0" />
+                                                            <TextBlock Text="{Binding Rotulo}" FontSize="9" Foreground="#B8B8B8"
+                                                                       Canvas.Left="{Binding PosicaoPx}" Canvas.Top="1" Margin="2,0,0,0" />
+                                                        </Canvas>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Canvas>
+
+                                        <!-- Régua vertical (esquerda) — mesma lógica, virada de lado. -->
+                                        <Canvas Grid.Row="1" Grid.Column="0" Width="28" Height="{Binding CanvasAlturaPx}" Background="#232323">
+                                            <ItemsControl ItemsSource="{Binding ReguaVertical}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Canvas>
+                                                            <Rectangle Height="1" Width="{Binding Maior, Converter={x:Static conv:MaiorParaAlturaDeTracoConverter.Instancia}}"
+                                                                       Fill="#8A8A8A" Canvas.Top="{Binding PosicaoPx}" Canvas.Right="0" />
+                                                            <TextBlock Text="{Binding Rotulo}" FontSize="9" Foreground="#B8B8B8"
+                                                                       Canvas.Top="{Binding PosicaoPx}" Canvas.Left="1" Margin="0,1,0,0" />
+                                                        </Canvas>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Canvas>
+
+                                        <!-- O tecido em si: retângulo claro contrastando com a mesa escura ao redor, com o corte (arte real das peças) por cima. -->
+                                        <Grid Grid.Row="1" Grid.Column="1" Width="{Binding CanvasLarguraPx}" Height="{Binding CanvasAlturaPx}">
+                                            <Rectangle Fill="#EDE7DA" Stroke="#F2762E" StrokeThickness="1.5" StrokeDashArray="4,3" />
+                                            <ItemsControl ItemsSource="{Binding Posicoes}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <Canvas />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Canvas>
+                                                            <Path Data="{Binding Contorno}" Fill="{Binding Cor}" Opacity="0.85"
+                                                                  Stroke="Black" StrokeThickness="0.5" />
+                                                            <TextBlock Text="{Binding Rotulo}" FontSize="10" Foreground="White"
+                                                                       Canvas.Left="{Binding CentroX}" Canvas.Top="{Binding CentroY}" />
+                                                        </Canvas>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Grid>
+                                    </Grid>
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

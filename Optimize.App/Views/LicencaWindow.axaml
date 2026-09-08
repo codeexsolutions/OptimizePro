@@ -1,0 +1,40 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Optimize.App.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="480" d:DesignHeight="380"
+        x:Class="Optimize.App.Views.LicencaWindow"
+        x:DataType="vm:LicencaViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="Optimize — Ativação"
+        Width="480" Height="380"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen">
+
+    <StackPanel Margin="32" Spacing="16" VerticalAlignment="Center">
+        <StackPanel Spacing="4">
+            <TextBlock Text="Ativação necessária" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="Informe o código de licença que você recebeu pra continuar usando o Optimize."
+                       FontSize="13" Opacity="0.7" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <TextBox Text="{Binding Codigo}" Watermark="Cole aqui o código de licença" AcceptsReturn="False"
+                 FontFamily="Consolas,Cascadia Mono,monospace" TextWrapping="Wrap" MinHeight="70" />
+
+        <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}" CornerRadius="4" Padding="10,8"
+                IsVisible="{Binding MensagemEhErro}">
+            <TextBlock Text="{Binding Mensagem}" FontSize="12" TextWrapping="Wrap" />
+        </Border>
+
+        <Border Background="{DynamicResource SystemFillColorSuccessBackgroundBrush}" CornerRadius="4" Padding="10,8"
+                IsVisible="{Binding !MensagemEhErro}">
+            <TextBlock Text="{Binding Mensagem}" FontSize="12" TextWrapping="Wrap"
+                       IsVisible="{Binding Mensagem, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </Border>
+
+        <Button Content="Ativar" Command="{Binding AtivarCommand}"
+                Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0,10" CornerRadius="4" />
+    </StackPanel>
+</Window>

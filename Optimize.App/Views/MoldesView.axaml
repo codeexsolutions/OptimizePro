@@ -1,0 +1,89 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Optimize.App.ViewModels"
+             xmlns:moldes="using:OptimizePro.Services.Moldes"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+             x:Class="Optimize.App.Views.MoldesView"
+             x:DataType="vm:MoldesViewModel">
+
+    <ScrollViewer>
+        <StackPanel Spacing="20" MaxWidth="920" HorizontalAlignment="Stretch">
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Moldes" FontSize="26" FontWeight="Bold" />
+                <TextBlock Text="Centralize moldes, tamanhos e estampas da produção." FontSize="14" Opacity="0.65" />
+            </StackPanel>
+
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="16">
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,16,0">
+                            <TextBlock Text="Moldes guardados" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock TextWrapping="Wrap" FontSize="13" Opacity="0.65"
+                                       Text="Cada molde guarda o contorno em centímetros, então volta sempre na medida certa." />
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="+ Adicionar molde" VerticalAlignment="Top"
+                                Command="{Binding AdicionarMoldeCommand}"
+                                Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                                Padding="14,8" CornerRadius="4" />
+                    </Grid>
+
+                    <Expander Header="Que arquivo eu mando para cá?">
+                        <TextBlock TextWrapping="Wrap" Opacity="0.75" FontSize="13" Margin="0,8,0,0"
+                                   Text="Moldes em DXF, PLT, SVG ou PDF vetorial, ou artes em PNG/JPG. A medida vem sempre do próprio arquivo." />
+                    </Expander>
+
+                    <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                            CornerRadius="4" Padding="10,8"
+                            IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="{Binding MensagemDeErro}" FontSize="12" TextWrapping="Wrap" />
+                    </Border>
+
+                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding Carregando}" />
+
+                    <StackPanel IsVisible="{Binding !Carregando}" Spacing="16">
+
+                        <StackPanel IsVisible="{Binding !TemMoldes}" HorizontalAlignment="Center" Spacing="10" Margin="0,24">
+                            <ui:SymbolIcon Symbol="Cut" FontSize="30" Opacity="0.4" HorizontalAlignment="Center" />
+                            <TextBlock Text="Nenhum molde guardado ainda" FontWeight="SemiBold" FontSize="15" HorizontalAlignment="Center" />
+                            <TextBlock TextWrapping="Wrap" TextAlignment="Center" FontSize="13" Opacity="0.6"
+                                       MaxWidth="360" HorizontalAlignment="Center"
+                                       Text="Mande o desenho em DXF, PLT, SVG ou PDF e o molde fica pronto para encaixar." />
+                        </StackPanel>
+
+                        <ItemsControl ItemsSource="{Binding Moldes}" IsVisible="{Binding TemMoldes}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                            CornerRadius="6" Padding="14,10" Margin="0,0,0,8">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <ui:SymbolIcon Grid.Column="0" Symbol="Cut"
+                                                           Foreground="{DynamicResource SystemAccentColor}"
+                                                           VerticalAlignment="Center" Margin="0,0,12,0" />
+                                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Nome}" FontWeight="SemiBold" FontSize="14" />
+                                                <TextBlock FontSize="12" Opacity="0.6"
+                                                           Text="{Binding TotalPecas, StringFormat='{}{0} peça(s) no total'}" />
+                                            </StackPanel>
+                                            <Button Grid.Column="2" Content="Excluir" FontSize="12"
+                                                    Command="{Binding $parent[UserControl].DataContext.ExcluirMoldeCommand}"
+                                                    CommandParameter="{Binding}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
