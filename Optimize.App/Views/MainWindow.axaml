@@ -9,6 +9,8 @@
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="Optimize"
+        Background="{DynamicResource PincelFundo}"
+        FontFamily="{DynamicResource FonteTexto}"
         Width="1280" Height="800"
         MinWidth="900" MinHeight="600">
 
@@ -19,25 +21,32 @@
                         PaneDisplayMode="Left"
                         IsSettingsVisible="False"
                         IsBackButtonVisible="False"
-                        OpenPaneLength="232"
+                        OpenPaneLength="244"
                         SelectionChanged="NavPrincipal_OnSelectionChanged">
 
+        <!-- Selo + nome, igual ao topo do menu lateral da referência (Menu.tsx). -->
         <ui:NavigationView.PaneHeader>
-            <StackPanel Orientation="Horizontal" Spacing="10" Margin="4,8,0,8">
-                <Border Width="32" Height="32" CornerRadius="7" Background="{DynamicResource SystemAccentColor}">
-                    <TextBlock Text="OP" FontWeight="Bold" FontSize="13" Foreground="White"
+            <StackPanel Orientation="Horizontal" Spacing="11" Margin="7,10,0,18">
+                <Border Width="40" Height="40" CornerRadius="11"
+                        Background="{DynamicResource PincelAmbar}"
+                        BorderBrush="{DynamicResource PincelAmbarLinha}" BorderThickness="1">
+                    <TextBlock Text="OP" FontFamily="{DynamicResource FonteTitulo}" FontWeight="Bold" FontSize="13"
+                               LetterSpacing="-0.3"
+                               Foreground="{DynamicResource PincelAmbarTinta}"
                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
-                <StackPanel Spacing="0" VerticalAlignment="Center">
-                    <TextBlock Text="Optimize" FontSize="16" FontWeight="SemiBold" LineHeight="18" />
-                    <TextBlock Text="PRODUÇÃO &amp; ENCAIXE" FontSize="10" FontWeight="Medium"
-                               Foreground="{DynamicResource SystemAccentColor}" LineHeight="14" />
+                <StackPanel Spacing="1" VerticalAlignment="Center">
+                    <TextBlock Text="Optimize" FontSize="16.3" FontWeight="Bold" LetterSpacing="0.1"
+                               Foreground="{DynamicResource PincelTinta}" LineHeight="18" />
+                    <TextBlock Text="Moldes &amp; encaixe" FontSize="10.9" LetterSpacing="0.3"
+                               Foreground="{DynamicResource PincelTintaApagada}" LineHeight="14" />
                 </StackPanel>
             </StackPanel>
         </ui:NavigationView.PaneHeader>
 
+        <!-- Lista só — sem cabeçalho de seção (§ decisão: mantém Disparo/Configurações, mas
+             numa lista única, como a referência faz com as 4 telas dela). -->
         <ui:NavigationView.MenuItems>
-            <ui:NavigationViewItemHeader Content="PRODUÇÃO" />
             <ui:NavigationViewItem Tag="Moldes" IsSelected="True" AutomationProperties.Name="Moldes">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="Cut" />
@@ -82,8 +91,6 @@
                     </StackPanel>
                 </ui:NavigationViewItem.Content>
             </ui:NavigationViewItem>
-
-            <ui:NavigationViewItemHeader Content="COMUNICAÇÃO" />
             <ui:NavigationViewItem Tag="Disparo" AutomationProperties.Name="Disparo">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="Send" />
@@ -111,15 +118,60 @@
         <ui:NavigationView.PaneFooter>
             <StackPanel Margin="16,0,16,16" Spacing="2">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Ellipse Width="8" Height="8" Fill="#F0A020" VerticalAlignment="Center" />
+                    <Ellipse Width="8" Height="8" Fill="{DynamicResource PincelAmbar}" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding StatusWhatsApp, StringFormat='WhatsApp: {0}'}"
-                               FontSize="12" Opacity="0.7" VerticalAlignment="Center" />
+                               FontSize="12" Foreground="{DynamicResource PincelTintaFraca}" VerticalAlignment="Center" />
                 </StackPanel>
             </StackPanel>
         </ui:NavigationView.PaneFooter>
 
         <ui:NavigationView.Content>
-            <ContentControl Content="{Binding TelaAtual}" Margin="24" />
+            <Grid RowDefinitions="Auto,*" Background="{DynamicResource PincelFundo}">
+
+                <!-- Cabeçalho fixo — porte de Cabecalho.tsx: selo da tela, título, apoio e relógio. -->
+                <Border Grid.Row="0"
+                        Background="{DynamicResource PincelTopo}"
+                        BorderBrush="{DynamicResource PincelLinha}" BorderThickness="0,0,0,1"
+                        Padding="30,11">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="10"
+                                Background="{DynamicResource PincelAmbarSuave}"
+                                BorderBrush="{DynamicResource PincelAmbarLinha}" BorderThickness="1"
+                                Margin="0,0,14,0">
+                            <ui:SymbolIcon Symbol="{Binding InfoDaTelaAtual.Icone}" FontSize="17"
+                                           Foreground="{DynamicResource PincelAmbar}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding InfoDaTelaAtual.Titulo}"
+                                       FontFamily="{DynamicResource FonteTitulo}" FontSize="19" FontWeight="SemiBold"
+                                       LetterSpacing="-0.4"
+                                       Foreground="{DynamicResource PincelTinta}" VerticalAlignment="Center" />
+                            <Ellipse Width="3" Height="3" Fill="{DynamicResource PincelAmbarLinha}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding InfoDaTelaAtual.ApoioTopo}" FontSize="12.5"
+                                       Foreground="{DynamicResource PincelTintaFraca}" VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+
+                        <Border Grid.Column="2" Background="{DynamicResource PincelPainel}"
+                                BorderBrush="{DynamicResource PincelLinha}" BorderThickness="1" CornerRadius="9"
+                                Padding="11,7">
+                            <StackPanel Orientation="Horizontal" Spacing="9">
+                                <ui:SymbolIcon Symbol="Clock" FontSize="13" Foreground="{DynamicResource PincelAmbar}" />
+                                <TextBlock Text="{Binding RelogioData}" FontSize="11"
+                                           Foreground="{DynamicResource PincelTintaFraca}" VerticalAlignment="Center" />
+                                <Rectangle Width="1" Height="13" Fill="{DynamicResource PincelLinha}" />
+                                <TextBlock Text="{Binding RelogioHora}" FontFamily="{DynamicResource FonteMono}"
+                                           FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource PincelTinta}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <ContentControl Grid.Row="1" Content="{Binding TelaAtual}" Margin="30,24" />
+            </Grid>
         </ui:NavigationView.Content>
 
     </ui:NavigationView>

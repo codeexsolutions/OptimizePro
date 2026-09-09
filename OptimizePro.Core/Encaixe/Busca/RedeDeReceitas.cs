@@ -1,7 +1,7 @@
 namespace OptimizePro.Core.Encaixe.Busca;
 
-/// <summary>Uma peça resumida no que a rede das receitas precisa saber sobre "o formato do trabalho" (§12.1) — ocupação da caixa delimitadora, dimensões e giro.</summary>
-public sealed record PecaParaRede(double Ocupacao, double Largura, double Altura, TipoDeGiro Giro);
+/// <summary>Uma peça resumida no que a rede das receitas precisa saber sobre "o formato do trabalho" (§12.1) — ocupação da caixa delimitadora, dimensões, giro e quantas cópias dela existem no trabalho.</summary>
+public sealed record PecaParaRede(double Ocupacao, double Largura, double Altura, TipoDeGiro Giro, int Quantidade = 1);
 
 /// <summary>
 /// O vocabulário de cada campo de uma receita (§12.1) — cobre tudo que os quatro
@@ -33,6 +33,11 @@ public static class VocabularioDeReceita
         MotorDeEncaixe.Faixas => $"faixas/{Minusculo(r.Agrupamento)}/{Minusculo(r.Ordem)}/{Minusculo(r.HeuristicaContorno!.Value)}",
         MotorDeEncaixe.Retangulo => $"retangulo/empe/{Minusculo(r.Ordem)}/{Minusculo(r.HeuristicaCaixa!.Value)}",
         MotorDeEncaixe.Nfp => "nfp/solta/area/encosta",
+        // "vaos" não existia no vocabulário original de 4 motores (§21.3) — mesma política do
+        // Contato (fora da codificação one-hot de propósito, VetorDaChave só zera o bloco de
+        // motor pra essa chave em vez de lançar; sem precisar mudar Dimensao/Motores e
+        // arriscar pesos treinados antigos desalinharem).
+        MotorDeEncaixe.Vaos => $"vaos/solta/{Minusculo(r.Ordem)}/vaos",
         _ => throw new ArgumentOutOfRangeException(nameof(r)),
     };
 
@@ -65,35 +70,50 @@ public static class VetorizacaoDoTrabalho
 
     private readonly record struct Estatisticas(double Media, double Desvio, double Min, double Max);
 
-    private static Estatisticas Calcular(IReadOnlyList<double> lista)
+    /// <summary>
+    /// Estatística PONDERADA por <see cref="PecaParaRede.Quantidade"/> (02/09/2026, corrigido
+    /// comparando com <c>vetorDoTrabalho</c>/<c>estatisticasPesadas</c> em
+    /// <c>public/encaixe-rede.js</c> do projeto de referência). Antes, cada LINHA da tabela de
+    /// peças (um formato distinto) valia o mesmo peso na média/desvio, não importa se aquele
+    /// formato tinha 1 cópia ou 200 — um trabalho com 1 peça rara e 199 cópias de outra saía
+    /// com a média dividida meio a meio entre as duas, quando na prática é quase só a segunda
+    /// que domina o tecido de verdade. Mín/máx não mudam: duplicar um valor não move o
+    /// extremo.
+    /// </summary>
+    private static Estatisticas CalcularPonderada(IReadOnlyList<(double Valor, int Peso)> lista)
     {
         if (lista.Count == 0) return new Estatisticas(0, 0, 0, 0);
 
-        var media = lista.Sum() / lista.Count;
-        var variancia = lista.Sum(v => (v - media) * (v - media)) / lista.Count;
-        return new Estatisticas(media, Math.Sqrt(variancia), lista.Min(), lista.Max());
+        var pesoTotal = lista.Sum(p => (double)p.Peso);
+        if (pesoTotal <= 0) pesoTotal = lista.Count; // defensivo — Quantidade não devia vir <=0
+
+        var media = lista.Sum(p => p.Valor * p.Peso) / pesoTotal;
+        var variancia = lista.Sum(p => p.Peso * (p.Valor - media) * (p.Valor - media)) / pesoTotal;
+
+        return new Estatisticas(media, Math.Sqrt(variancia), lista.Min(p => p.Valor), lista.Max(p => p.Valor));
     }
 
     public static double[] VetorDoTrabalho(IReadOnlyList<PecaParaRede> pecas, double larguraTecido)
     {
-        var ocupacoes = pecas.Select(p => p.Ocupacao).ToList();
-        var proporcoes = pecas.Select(p => Math.Log2(p.Altura > 0 ? p.Largura / p.Altura : 1)).ToList();
-        var oc = Calcular(ocupacoes);
-        var pr = Calcular(proporcoes);
-        var livres = pecas.Count(p => p.Giro == TipoDeGiro.Livre);
-        var fixas = pecas.Count(p => p.Giro == TipoDeGiro.Fixa);
-        var n = Math.Max(1, pecas.Count);
+        var ocupacoes = pecas.Select(p => (p.Ocupacao, Math.Max(1, p.Quantidade))).ToList();
+        var proporcoes = pecas.Select(p => (Math.Log2(p.Altura > 0 ? p.Largura / p.Altura : 1), Math.Max(1, p.Quantidade))).ToList();
+        var oc = CalcularPonderada(ocupacoes);
+        var pr = CalcularPonderada(proporcoes);
+
+        var totalDeCopias = Math.Max(1, pecas.Sum(p => Math.Max(1, p.Quantidade)));
+        var livres = pecas.Where(p => p.Giro == TipoDeGiro.Livre).Sum(p => Math.Max(1, p.Quantidade));
+        var fixas = pecas.Where(p => p.Giro == TipoDeGiro.Fixa).Sum(p => Math.Max(1, p.Quantidade));
 
         return
         [
-            Math.Log2(1 + pecas.Count) / 6,
+            Math.Log2(1 + totalDeCopias) / 8,
             Math.Min(2, larguraTecido / 300),
             oc.Media, oc.Desvio, oc.Min, oc.Max,
             pr.Media / 3, pr.Desvio / 3,
             Math.Max(-1, Math.Min(1, pr.Min / 3)),
             Math.Max(-1, Math.Min(1, pr.Max / 3)),
-            (double)livres / n,
-            (double)fixas / n,
+            (double)livres / totalDeCopias,
+            (double)fixas / totalDeCopias,
         ];
     }
 }

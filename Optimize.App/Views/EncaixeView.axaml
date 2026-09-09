@@ -13,16 +13,12 @@
         Layout em duas colunas (§9.3, "área de configuração ao lado da área de resultado" —
         igual à referência original): esquerda estreita e fixa com tecido/arquivos/giro, direita
         larga com progresso/resultado/desenho. Cada coluna rola por conta própria — assim a
-        lista de arquivos não empurra o resultado pra fora da tela nem vice-versa.
+        lista de arquivos não empurra o resultado pra fora da tela nem vice-versa. Título/apoio
+        já saem do cabeçalho fixo da janela (ver MainWindow) — não repete aqui.
     -->
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="*">
 
-        <StackPanel Grid.Row="0" Spacing="4" Margin="20,20,20,16">
-            <TextBlock Text="Encaixe" FontSize="26" FontWeight="Bold" />
-            <TextBlock Text="Arraste os moldes ou as artes pra cá, configure o tecido e busque o melhor aproveitamento." FontSize="14" Opacity="0.65" />
-        </StackPanel>
-
-        <Grid Grid.Row="1" ColumnDefinitions="440,*" Margin="20,0,20,20">
+        <Grid Grid.Row="0" ColumnDefinitions="440,*">
 
             <!-- Coluna esquerda: configuração (tecido/espaço/margem, giro, arquivos). -->
             <ScrollViewer Grid.Column="0" Margin="0,0,16,0">

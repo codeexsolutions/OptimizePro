@@ -45,6 +45,21 @@ internal static class GeradorDeReceitas
             receitas.Add(Receita.DeNfp());
         }
 
+        // Vãos (§21.3) — testado, MEDIDO no pool comum e REVERTIDO (mesma política de sempre:
+        // sem ganho medido, não vira padrão). Lote real de 25-08 (179cm/60s, 2 rodadas):
+        // 251,8cm e 252,0cm, ambos dentro da faixa já documentada sem vãos (251,6-252,8cm) —
+        // Contorno venceu as duas vezes, Vãos nunca. A tentativa-count caiu de ~590k pra
+        // ~400-440k (receita de vãos é mais cara por descer pelos intervalos, e sem fatia
+        // dedicada ela dilui o orçamento das outras receitas na disputa comum) sem compensar em
+        // consumo. Bate com o que a própria referência mediu: só ganhou de verdade DEPOIS de dar
+        // a ele uma fatia PRÓPRIA (1/8 do orçamento, não misturada no pool). O motor
+        // (`EncaixadorPorVaos`, Core) e o despacho (`EncaixeService.ExecutarVaos`) continuam
+        // prontos e testados — só a entrada em `GerarPadrao` foi revertida. Próximo passo, se
+        // valer a pena revisitar: estender `ParticionamentoDeFatias` (que já reserva fatia
+        // dedicada pro NFP, hoje desligado — `reservarUltimaFatiaParaNfp: false` em
+        // `BuscarMelhorEncaixeAsync`) pra reservar uma fatia própria também pro motor de vãos, e
+        // remedir NESSA configuração antes de decidir de novo.
+
         if (modo != ModoDeEncaixe.SempreContorno)
             foreach (var ordem in OrdensDeRetangulo)
                 foreach (var heuristica in HeuristicasDeRetangulo)

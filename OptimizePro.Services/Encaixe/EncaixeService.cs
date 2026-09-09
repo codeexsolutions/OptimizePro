@@ -175,7 +175,7 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
             var areaReal = Math.Abs(Geometria.AreaComSinal(p.Contorno));
             var areaCaixa = caixa.Largura * caixa.Altura;
             var ocupacao = areaCaixa > 0 ? areaReal / areaCaixa : 1.0;
-            return new PecaParaRede(ocupacao, caixa.Largura, caixa.Altura, p.Giro);
+            return new PecaParaRede(ocupacao, caixa.Largura, caixa.Altura, p.Giro, p.Quantidade);
         }).ToList();
 
         var assinatura = AssinaturaDeTrabalho.Calcular(pecasParaRede, config.LarguraTecidoCm);
@@ -279,6 +279,7 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
             MotorDeEncaixe.Contorno => ExecutarContorno(receita, ordem, itensContorno, colsTecido, grade.PassoCm, margemCm, candidatosCruzados, candidatosDeBlocoPorPeca, detalhado),
             MotorDeEncaixe.Retangulo => ExecutarRetangulo(receita, ordem, itensCaixa, larguraTecidoCm, margemCm),
             MotorDeEncaixe.Nfp => ExecutarNfp(ordem, itensNfp, contornosOriginaisPorRotacaoPorId, larguraTecidoCm, margemCm, grade),
+            MotorDeEncaixe.Vaos => ExecutarVaos(ordem, itensContorno, colsTecido, grade.PassoCm, margemCm, detalhado),
             _ => throw new NotSupportedException($"Motor {receita.Motor} ainda não despachado (faixas ficam pro próximo incremento)."),
         };
 
@@ -497,6 +498,82 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
         return new ResultadoMotor(consumo, naoEncaixadosCount, posicoes ?? [], idsNaoEncaixados ?? [], areaReal, piorUnidadeItens);
     }
 
+    /// <summary>
+    /// Porte de <c>encaixarPorVaos</c> (§21.3 da spec) — mesma ideia de laço do contorno, só
+    /// que sobre <see cref="TecidoPorVaos"/> (intervalos por coluna) em vez de um relevo só,
+    /// via <see cref="EncaixadorPorVaos"/>. Escopo desta primeira versão: só peça avulsa —
+    /// sem a máquina de blocos/cruzada que <see cref="ExecutarContorno"/> tem (ver o
+    /// comentário de escopo em <c>EncaixadorPorVaos.cs</c>).
+    /// </summary>
+    private static ResultadoMotor ExecutarVaos(
+        IReadOnlyList<int> ordem, IReadOnlyList<ItemContorno> itens, int colsTecido, double passoCm, double margemCm, bool detalhado)
+    {
+        var tecido = new TecidoPorVaos(colsTecido);
+
+        List<ItemDeResultado>? posicoes = detalhado ? [] : null;
+        List<string>? idsNaoEncaixados = detalhado ? [] : null;
+        var naoEncaixadosCount = 0;
+        var areaReal = 0.0;
+        var fundoMaximo = 0;
+        IReadOnlyList<int>? piorUnidadeItens = null;
+        var piorVazio = long.MinValue;
+
+        foreach (var indice in ordem)
+        {
+            var item = itens[indice];
+
+            (Forma Forma, PosicaoEncontrada Posicao)? melhor = null;
+            foreach (var rot in item.RotacoesPermitidas)
+            {
+                if (!item.Item.MascarasPorRotacao.TryGetValue(rot, out var mascara)) continue;
+                var forma = Forma.DeMascaraUnica(mascara, rot);
+                if (forma.Colunas > colsTecido) continue;
+
+                var pos = EncaixadorPorVaos.MelhorVaga(tecido, forma);
+                if (pos is not { } p) continue;
+                if (melhor is null || p.P1 < melhor.Value.Posicao.P1)
+                    melhor = (forma, p);
+            }
+
+            if (melhor is not { } escolha)
+            {
+                naoEncaixadosCount++;
+                idsNaoEncaixados?.Add(item.Item.Id);
+                continue;
+            }
+
+            var (forma2, pos2) = escolha;
+            EncaixadorPorVaos.Ocupar(tecido, forma2, pos2.X, pos2.Y, indice);
+
+            var fundoDaForma = pos2.Y + forma2.MaxBase + 1;
+            if (fundoDaForma > fundoMaximo) fundoMaximo = fundoDaForma;
+
+            // "Vazio" pro reparo guiado, mesma fórmula do contorno (ver Assentar em
+            // ExecutarContornoComPerfil) — o motor de vãos não escolhe por vazio, mas o valor
+            // continua servindo pra achar a unidade que sobrou com mais buraco morto acima dela.
+            var vazio = pos2.Y * (long)forma2.NumeroDeColunasValidas + forma2.SomaTopo;
+            if (vazio > piorVazio)
+            {
+                piorVazio = vazio;
+                piorUnidadeItens = [indice];
+            }
+
+            if (posicoes is null) continue;
+
+            areaReal += item.AreaRealCm2;
+            posicoes.Add(new ItemDeResultado(
+                item.Item.Id,
+                pos2.X * passoCm,
+                pos2.Y * passoCm,
+                forma2.Colunas * passoCm,
+                (forma2.MaxBase + 1) * passoCm,
+                forma2.Partes[0].RotacaoGraus));
+        }
+
+        var consumo = fundoMaximo * passoCm + margemCm * 2;
+        return new ResultadoMotor(consumo, naoEncaixadosCount, posicoes ?? [], idsNaoEncaixados ?? [], areaReal, piorUnidadeItens);
+    }
+
     /// <summary>Uma unidade de placement do contorno — 1+ peças assentadas de uma vez. "Cruzada" já chega com as formas candidatas prontas (não dá pra recomputar por peça-base, já que junta formatos diferentes); dupla/trio/solta computam sob demanda via <c>CandidatosDaUnidade</c>.</summary>
     private sealed record UnidadeContorno(IReadOnlyList<int> Itens, IReadOnlyList<Forma>? CandidatosPreComputados);
 
@@ -698,6 +775,7 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
     {
         MotorDeEncaixe.Contorno => $"{r.Motor}·{r.Agrupamento}·{r.Ordem}·{r.HeuristicaContorno}",
         MotorDeEncaixe.Nfp => $"{r.Motor}·{r.Ordem}",
+        MotorDeEncaixe.Vaos => $"{r.Motor}·{r.Ordem}",
         _ => $"{r.Motor}·{r.Agrupamento}·{r.Ordem}·{r.HeuristicaCaixa}",
     };
 }

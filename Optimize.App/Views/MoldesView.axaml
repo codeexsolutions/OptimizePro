@@ -12,11 +12,6 @@
     <ScrollViewer>
         <StackPanel Spacing="20" MaxWidth="920" HorizontalAlignment="Stretch">
 
-            <StackPanel Spacing="4">
-                <TextBlock Text="Moldes" FontSize="26" FontWeight="Bold" />
-                <TextBlock Text="Centralize moldes, tamanhos e estampas da produção." FontSize="14" Opacity="0.65" />
-            </StackPanel>
-
             <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1" CornerRadius="8" Padding="20">

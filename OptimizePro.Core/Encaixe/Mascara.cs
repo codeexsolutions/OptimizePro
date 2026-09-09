@@ -48,7 +48,7 @@ public sealed class Mascara
     {
         var cols = silhuetaSemFolga.GetLength(0);
         var linhas = silhuetaSemFolga.GetLength(1);
-        var comFolga = raioDeFolga > 0 ? Dilatacao.DilatarManhattan(silhuetaSemFolga, raioDeFolga) : silhuetaSemFolga;
+        var comFolga = raioDeFolga > 0 ? Dilatacao.Dilatar(silhuetaSemFolga, raioDeFolga) : silhuetaSemFolga;
 
         return new Mascara(cols, linhas, ParaBytes(silhuetaSemFolga, cols, linhas), ParaBytes(comFolga, cols, linhas), offXCm, offYCm);
     }

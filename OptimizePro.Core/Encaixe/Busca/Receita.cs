@@ -1,6 +1,6 @@
 namespace OptimizePro.Core.Encaixe.Busca;
 
-public enum MotorDeEncaixe { Contorno, Retangulo, Faixas, Nfp }
+public enum MotorDeEncaixe { Contorno, Retangulo, Faixas, Nfp, Vaos }
 
 /// <summary>Padrão: [Dupla, Solta, Trio, Cruzada] (§11.7/§11.8) — <see cref="Quarteto"/> não entra na disputa (o original mediu e não compensou).</summary>
 public enum AgrupamentoDeEncaixe { Solta, Dupla, Trio, Quarteto, Cruzada }
@@ -31,4 +31,12 @@ public sealed record Receita(
 
     /// <summary>NFP não tem escolha de agrupamento/ordem/heurística real (§11.5) — uma receita canônica só, a busca ainda varia a ORDEM de colocação dos itens entre tentativas.</summary>
     public static Receita DeNfp() => new(MotorDeEncaixe.Nfp, AgrupamentoDeEncaixe.Solta, CriterioDeOrdem.Area);
+
+    /// <summary>
+    /// Encaixe por vãos (§21.3 da spec — porte de <c>encaixarPorVaos</c>, achado ligado na
+    /// referência) — não tem heurística (a posição vem da descida pelos intervalos, não de
+    /// "fundo"/"vazio"). Escopo desta primeira versão: só <see cref="AgrupamentoDeEncaixe.Solta"/>
+    /// — dupla/trio/cruzada ficam pro próximo incremento se medição real pedir.
+    /// </summary>
+    public static Receita DeVaos(CriterioDeOrdem ordem) => new(MotorDeEncaixe.Vaos, AgrupamentoDeEncaixe.Solta, ordem);
 }

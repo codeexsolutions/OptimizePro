@@ -10,11 +10,6 @@
     <ScrollViewer>
         <StackPanel Spacing="20" MaxWidth="1100" HorizontalAlignment="Stretch">
 
-            <StackPanel Spacing="4">
-                <TextBlock Text="Vetor" FontSize="26" FontWeight="Bold" />
-                <TextBlock Text="Transforme uma imagem em traço vetorial (SVG) — ideal pra estampas prontas pra corte." FontSize="14" Opacity="0.65" />
-            </StackPanel>
-
             <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
                     CornerRadius="4" Padding="10,8"
                     IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">

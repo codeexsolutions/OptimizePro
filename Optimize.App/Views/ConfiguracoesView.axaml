@@ -11,11 +11,6 @@
     <ScrollViewer>
         <StackPanel Spacing="20" MaxWidth="700" HorizontalAlignment="Stretch">
 
-            <StackPanel Spacing="4">
-                <TextBlock Text="Configurações" FontSize="26" FontWeight="Bold" />
-                <TextBlock Text="Preferências do disparo e exportação." FontSize="14" Opacity="0.65" />
-            </StackPanel>
-
             <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
                     CornerRadius="4" Padding="10,8"
                     IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">

@@ -2197,3 +2197,103 @@ sintética, o Potrace preservou o recorte côncavo corretamente (coisa que o mot
 ainda errava nesse mesmo caso) — e o pipeline completo (`PotraceProcessoService` via
 `VetorService.VetorizarAsync` com `UsarMotorExterno: true`) rodou ponta a ponta contra
 um logo sintético (blob + texto), produzindo SVG com cores e ordem de pintura corretas.
+
+---
+
+## 21. Sincronização com `optmize-full` (08/09/2026) — duas correções portadas do motor de encaixe
+
+Comparação de rotina com o histórico de commits do projeto de referência desde a última
+sincronização. A maior parte dos commits recentes de lá é fora do nosso stack — uma macro
+de CorelDRAW em VSTA/C# pra personalizar camisa de time (`corel/*.cs`, roda DENTRO do
+Corel, não é parte deste app) e uma reforma completa do front-end pra React (`src/`,
+irrelevante — o OptimizePro já tem sua própria UI Avalonia). Duas correções de motor,
+porém, eram genuínas e portáveis:
+
+### 21.1 Engorde da folga: disco, não mais diamante de Manhattan
+
+> `OptimizePro.Core/Encaixe/Dilatacao.cs` — a referência já tinha corrigido um erro pior
+> (engorde horizontal+vertical separável desenhando um QUADRADO, até 41% maior que o raio
+> pedido nos cantos em diagonal — ver §11's nota sobre folga real medida em 15,0mm vs
+> 10mm pedidos). O port .NET nunca teve esse bug — usava dilatação por diamante de
+> Manhattan (`|dx|+|dy|≤raio`) desde o início —, mas o diamante tem o erro OPOSTO: como a
+> distância euclidiana é sempre ≤ a distância Manhattan, o diamante é sempre um
+> SUBCONJUNTO do disco de mesmo raio — ele SUBDIMENSIONA a margem em contato diagonal.
+> Pra raio≤2 as duas formas coincidem exatamente (nenhum teste antigo pegava a diferença);
+> a partir de raio≥3 um ponto como (dx,dy)=(2,2) — dentro do disco (distância √8≈2,83),
+> fora do diamante (soma 4) — passa a faltar. Errar a margem pra menos é o lado ruim do
+> erro (a peça vizinha pode encostar); errar pra mais só gasta um tiquinho de tecido.
+> `Dilatacao.Dilatar` (renomeado de `DilatarManhattan`) agora testa `dx²+dy²≤raio²`.
+> Teste de regressão dedicado (`Dilatar_Raio3_IncluiCantoDiagonalQueDiamanteAntigoExcluiria`)
+> confirma o ponto (2,2) incluído e (3,3) excluído num raio 3. 458 testes passando.
+
+### 21.2 Vetor de features da rede: ponderado por quantidade, não por linha da tabela
+
+> `OptimizePro.Core/Encaixe/Busca/RedeDeReceitas.cs`, `VetorizacaoDoTrabalho.VetorDoTrabalho`
+> — achado comparando com `estatisticasPesadas`/`vetorDoTrabalho` em
+> `public/encaixe-rede.js` (commit `ca4c171` do projeto de referência). O port calculava
+> média/desvio de ocupação e proporção contando cada LINHA da tabela de peças (um formato
+> distinto) com peso igual, ignorando `Quantidade` — um trabalho com 1 peça rara e 199
+> cópias de outra saía com a média dividida meio a meio entre as duas, quando na prática é
+> quase só a segunda que domina o tecido de verdade (mesmo viés afetava a fração de
+> giro livre/fixo, e o divisor do "quantas peças" — trocado de /6 pra /8, igual à
+> referência, e a contagem em si trocada de "linhas" pra "total de cópias"). `PecaParaRede`
+> ganhou `Quantidade` (default 1, então testes/chamadores antigos continuam válidos sem
+> mudança); `EncaixeService.cs` já tinha o dado (`PecaParaEncaixar.Quantidade`) e só
+> precisou passar adiante. Dois testes de regressão dedicados confirmam a ponderação
+> (`VetorDoTrabalho_MediaDeOcupacaoEhPonderadaPelaQuantidade_NaoPorLinhaDaTabela`,
+> `VetorDoTrabalho_FracaoDeGiroLivreEFixa_PonderaPelaQuantidade`). **Não portado**: o
+> versionamento de features (`REDE_VERSAO_FEATURES`) que a referência usa pra invalidar
+> pesos já treinados quando a fórmula do vetor muda — sem clientes reais ainda usando a
+> rede treinada, não há peso antigo pra invalidar; fica pra quando isso passar a importar.
+
+### 21.3 Avaliado e adiado — não portado nesta rodada
+
+> - **Ligar o motor "faixas" na lista padrão** (`Receita.DeFaixas` já existe em
+>   `OptimizePro.Core/Encaixe/Busca/Receita.cs`): NÃO é wiring barato como pareceu à
+>   primeira vista — `EncaixeService`'s dispatcher (`ExecutarContorno`/`ExecutarRetangulo`/
+>   `ExecutarNfp`, por volta da linha 279) não tem nenhum caso pra `MotorDeEncaixe.Faixas`;
+>   adicionar a receita à lista sem isso quebraria em runtime (switch sem match). Precisa
+>   de um `ExecutarFaixas` de verdade, adaptando os dados de peça/grade que `Contorno` já
+>   usa. Ganho medido na referência é pequeno e vem de reordenação compartilhada, não do
+>   motor "faixas" vencendo sozinho (0 vitórias nos testes deles) — baixa prioridade.
+> - **Conversão de cor por perfil ICC** (`cor-api.js`/`cor-icc.js`/`public/cor.js`, ~1100
+>   linhas): módulo novo e autocontido (decodifica JPEG CMYK cru, lê o LUT `A2B` do ICC
+>   embutido, interpola CLUT, Lab→XYZ com adaptação de Bradford até sRGB) — sem
+>   equivalente nenhum no OptimizePro hoje. Genuinamente portável, mas grande o bastante
+>   pra merecer sessão própria — fica anotado como candidato futuro, não escopado aqui.
+
+### 21.4 "Encaixe por vãos" — implementado, testado, e REVERTIDO da lista padrão por falta de ganho medido (08/09/2026)
+
+> Porte de `encaixarPorVaos`/`melhorVagaPorVaos`/`descerNosVaos`
+> (`public/encaixe-motor.js`, commit `bb1c9cc` da referência) — o motor por lista de
+> INTERVALOS ocupados por coluna (em vez de um relevo único), que enxerga o vão que fica
+> ACIMA de uma peça já assentada, algo que o relevo simples (`EncaixadorPorContorno`)
+> perde pra sempre assim que a peça é assentada.
+>
+> **Implementado**: `OptimizePro.Core/Encaixe/EncaixadorPorVaos.cs`
+> (`TecidoPorVaos`/`MelhorVaga`/`Ocupar`/`DescerNosVaos`, com o mesmo atalho "relevo
+> primeiro, descida cara só onde há vão de verdade" da referência — descrito lá como 84%
+> do custo do motor) e despachado em `EncaixeService.ExecutarVaos`
+> (`MotorDeEncaixe.Vaos`, `Receita.DeVaos`). **Escopo desta primeira versão: só peça
+> avulsa** — sem a máquina de blocos dupla/trio/cruzada que `ExecutarContorno` tem (fica
+> pro próximo incremento se medição real pedir depois de resolver o ponto abaixo). 5
+> testes dedicados em `EncaixadorPorVaosTests`, incluindo um que prova o valor central do
+> motor: uma peça pequena descendo e parando DENTRO de um vão fechado por um segmento
+> flutuante de outra peça, achando fundo=1 onde o relevo simples exigiria fundo=10.
+>
+> **Medido no lote real (25-08, 179cm/60s, 2 rodadas) com Vãos na disputa comum**: 251,8cm
+> e 252,0cm — ambos dentro da faixa já documentada SEM vãos (251,6-252,8cm, §11.7).
+> Contorno venceu as duas rodadas; Vãos nunca venceu. Tentativas caíram de ~590k pra
+> ~400-440k (a receita de vãos é mais cara por descer pelos intervalos, e sem fatia
+> dedicada ela dilui o orçamento das outras receitas na disputa comum) sem compensar em
+> consumo — mesma política de sempre ("sem ganho medido, não vira padrão", igual a Contato
+> e ReconstruirRabo). **Revertido de `GeradorDeReceitas.GerarPadrao`** — motor e despacho
+> continuam prontos/testados, só não entram na lista padrão.
+>
+> Isso bate com o que a própria referência mediu: eles só viram ganho real (-1,3~1,5%)
+> DEPOIS de dar ao motor uma fatia PRÓPRIA (1/8 do orçamento, não misturada no pool comum)
+> — `ParticionamentoDeFatias` já tem o mecanismo de reservar fatia dedicada (usado hoje só
+> pro NFP, e mesmo esse está desligado — `reservarUltimaFatiaParaNfp: false` no único
+> call site, `EncaixeService.BuscarMelhorEncaixeAsync`). Estender essa reserva pro motor de
+> vãos e remedir NESSA configuração é o próximo passo concreto, se algum dia valer a pena
+> revisitar — não escopado aqui.

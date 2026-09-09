@@ -47,6 +47,42 @@ public class VetorizacaoDoTrabalhoTests
 
         vetor[1].Should().Be(2.0);
     }
+
+    /// <summary>
+    /// Regressão (02/09/2026) — achado comparando com <c>estatisticasPesadas</c> em
+    /// <c>public/encaixe-rede.js</c>: a média de ocupação tem que ser PONDERADA pela
+    /// quantidade de cada peça, não uma linha-um-voto. Um trabalho com 1 peça rara (ocupação
+    /// baixa) e 199 cópias de outra (ocupação alta) tem que sair com a média bem perto da
+    /// dominante — não meio a meio entre as duas linhas.
+    /// </summary>
+    [Fact]
+    public void VetorDoTrabalho_MediaDeOcupacaoEhPonderadaPelaQuantidade_NaoPorLinhaDaTabela()
+    {
+        var pecas = new[]
+        {
+            new PecaParaRede(Ocupacao: 0.1, Largura: 10, Altura: 10, Giro: TipoDeGiro.MantemSentido, Quantidade: 1),
+            new PecaParaRede(Ocupacao: 0.9, Largura: 10, Altura: 10, Giro: TipoDeGiro.MantemSentido, Quantidade: 199),
+        };
+
+        var vetor = VetorizacaoDoTrabalho.VetorDoTrabalho(pecas, 150);
+
+        vetor[2].Should().BeGreaterThan(0.85); // média de ocupação (índice 2) — dominada pela peça de 199 cópias
+    }
+
+    [Fact]
+    public void VetorDoTrabalho_FracaoDeGiroLivreEFixa_PonderaPelaQuantidade()
+    {
+        var pecas = new[]
+        {
+            new PecaParaRede(0.5, 10, 10, TipoDeGiro.Livre, Quantidade: 3),
+            new PecaParaRede(0.5, 10, 10, TipoDeGiro.Fixa, Quantidade: 1),
+        };
+
+        var vetor = VetorizacaoDoTrabalho.VetorDoTrabalho(pecas, 150);
+
+        vetor[10].Should().BeApproximately(3.0 / 4, 1e-9); // fração livres, por CÓPIA — não por linha (que daria 1/2)
+        vetor[11].Should().BeApproximately(1.0 / 4, 1e-9);
+    }
 }
 
 public class VocabularioDeReceitaTests

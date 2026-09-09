@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="220"
+             x:Class="Optimize.App.Controls.Cartao"
+             x:Name="Root">
+
+    <Border Background="{DynamicResource PincelPainel}"
+            BorderBrush="{DynamicResource PincelLinha}"
+            BorderThickness="1"
+            CornerRadius="{DynamicResource RaioDePainel}"
+            Padding="22,21"
+            Margin="0,0,0,14">
+        <StackPanel Spacing="16">
+
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  IsVisible="{Binding #Root.Titulo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="9"
+                        Background="{DynamicResource PincelPainelSuave}"
+                        BorderBrush="{DynamicResource PincelLinha}" BorderThickness="1"
+                        IsVisible="{Binding #Root.Icone, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        VerticalAlignment="Top" Margin="0,2,12,0">
+                    <ui:IconSourceElement IconSource="{Binding #Root.Icone}" Width="17" Height="17"
+                                          Foreground="{DynamicResource PincelTintaFraca}" />
+                </Border>
+
+                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding #Root.Titulo}"
+                               FontFamily="{DynamicResource FonteTitulo}"
+                               FontSize="16.8" FontWeight="SemiBold" LetterSpacing="-0.3"
+                               Foreground="{DynamicResource PincelTinta}" />
+                    <TextBlock Text="{Binding #Root.Apoio}"
+                               FontSize="13.3" Foreground="{DynamicResource PincelTintaFraca}"
+                               TextWrapping="Wrap"
+                               IsVisible="{Binding #Root.Apoio, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+
+                <ContentPresenter Grid.Column="2" Content="{Binding #Root.Acao}"
+                                   VerticalAlignment="Top" Margin="12,0,0,0" />
+            </Grid>
+
+            <ContentPresenter Content="{Binding #Root.Content}" />
+        </StackPanel>
+    </Border>
+</UserControl>
