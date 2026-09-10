@@ -16,6 +16,9 @@ public sealed class CaminhosDoApp
     public string PastaSessaoWhatsApp => Path.Combine(PastaDeDados, "whatsapp-sessao");
     public string ArquivoDeLicenca => Path.Combine(PastaDeDados, "licenca.dat");
 
+    /// <summary>Estado local da sincronização com a Central (§24.2) — InstalacaoId + chave de API, DPAPI-protegidos, mesmo padrão de <see cref="ArquivoDeLicenca"/>.</summary>
+    public string ArquivoDeSincronizacao => Path.Combine(PastaDeDados, "sincronizacao.dat");
+
     public CaminhosDoApp() : this(PastaPadrao()) { }
 
     public CaminhosDoApp(string pastaDeDados)

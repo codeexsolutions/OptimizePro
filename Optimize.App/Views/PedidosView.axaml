@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Optimize.App.ViewModels"
+             xmlns:conv="using:Optimize.App.Converters"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="750"
+             x:Class="Optimize.App.Views.PedidosView"
+             x:DataType="vm:PedidosViewModel">
+
+    <ScrollViewer>
+        <StackPanel Spacing="20" MaxWidth="960" HorizontalAlignment="Stretch">
+
+            <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                    CornerRadius="4" Padding="10,8"
+                    IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding MensagemDeErro}" FontSize="12" TextWrapping="Wrap" />
+            </Border>
+
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Pedidos" FontSize="16" FontWeight="SemiBold" />
+                        <TextBlock TextWrapping="Wrap" FontSize="13" Opacity="0.65"
+                                   Text="A lista de produção na ordem da calandra. Monta-se no Histórico, marcando os trabalhos." />
+                    </StackPanel>
+
+                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding Carregando}" />
+
+                    <StackPanel IsVisible="{Binding !TemPedidos}" HorizontalAlignment="Center" Spacing="10" Margin="0,24">
+                        <ui:SymbolIcon Symbol="List" FontSize="30" Opacity="0.4" HorizontalAlignment="Center" />
+                        <TextBlock Text="Nenhum pedido ainda" FontWeight="SemiBold" FontSize="15" HorizontalAlignment="Center" />
+                        <TextBlock TextWrapping="Wrap" TextAlignment="Center" FontSize="13" Opacity="0.6"
+                                   MaxWidth="360" HorizontalAlignment="Center"
+                                   Text="Vá em Histórico, marque os trabalhos que vão junto e clique em Lançar pedido." />
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Pedidos}" IsVisible="{Binding TemPedidos}">
+                        <ItemsControl.ItemTemplate>
+                            <!-- Sem x:DataType de propósito: os bindings $parent[UserControl].DataContext.* abaixo não resolvem sob binding compilado. -->
+                            <DataTemplate>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                                        CornerRadius="8" Margin="0,0,0,8" ClipToBounds="True">
+                                    <StackPanel>
+                                        <Button Command="{Binding $parent[UserControl].DataContext.AlternarCommand}" CommandParameter="{Binding}"
+                                                Background="Transparent" BorderThickness="0" Padding="14,10" CornerRadius="0"
+                                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,120">
+                                                <ui:SymbolIcon Grid.Column="0" Symbol="{Binding Aberto, Converter={x:Static conv:BoolParaSetaConverter.Instancia}}" FontSize="13" Margin="0,0,10,0" />
+                                                <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding CriadoEmFormatado}" FontSize="13.5" FontWeight="SemiBold" />
+                                                    <TextBlock Text="{Binding Observacao}" FontSize="11" Opacity="0.55"
+                                                               IsVisible="{Binding Observacao, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="{Binding StatusRotulo}" FontSize="12" FontWeight="SemiBold"
+                                                           VerticalAlignment="Center" Margin="0,0,14,0" />
+                                                <StackPanel Grid.Column="3" Spacing="3">
+                                                    <TextBlock FontSize="11.5" FontFamily="{DynamicResource FonteMono}" HorizontalAlignment="Right">
+                                                        <Run Text="{Binding QuantidadeOk}" /><Run Text="/" /><Run Text="{Binding QuantidadeDeItens}" />
+                                                    </TextBlock>
+                                                    <ProgressBar Value="{Binding FracaoConcluida}" Maximum="1" Height="4" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Button>
+
+                                        <StackPanel IsVisible="{Binding Aberto}" Margin="14,0,14,14">
+                                            <ProgressBar IsIndeterminate="True" IsVisible="{Binding CarregandoDetalhe}" />
+
+                                            <StackPanel Spacing="8" IsVisible="{Binding !CarregandoDetalhe}">
+                                                <ItemsControl ItemsSource="{Binding Itens}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid ColumnDefinitions="24,*,Auto,80" Margin="0,4">
+                                                                <TextBlock Grid.Column="0" Text="{Binding Posicao}" FontSize="11" Opacity="0.5" FontFamily="{DynamicResource FonteMono}" />
+                                                                <StackPanel Grid.Column="1" Spacing="1">
+                                                                    <TextBlock Text="{Binding Tarefa}" FontSize="12.5" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Tarefa}" />
+                                                                    <TextBlock FontSize="10.5" Opacity="0.55">
+                                                                        <Run Text="{Binding ClienteETecido}" /><Run Text=" — " /><Run Text="{Binding NomeDaMaquina}" /><Run Text=" · " /><Run Text="{Binding DataFormatada}" />
+                                                                    </TextBlock>
+                                                                </StackPanel>
+                                                                <TextBlock Grid.Column="2" Text="{Binding StatusNaCalandra}" FontSize="11.5" FontWeight="SemiBold"
+                                                                           VerticalAlignment="Center" Margin="10,0" ToolTip.Tip="{Binding Motivo}" />
+                                                                <TextBlock Grid.Column="3" Text="{Binding Metragem}" FontSize="12" FontFamily="{DynamicResource FonteMono}" HorizontalAlignment="Right" />
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+
+                                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                                                    <Button Content="Em aberto" FontSize="11.5" Padding="10,5"
+                                                            Command="{Binding $parent[UserControl].DataContext.MarcarAbertoCommand}" CommandParameter="{Binding}" />
+                                                    <Button Content="Pausado" FontSize="11.5" Padding="10,5"
+                                                            Command="{Binding $parent[UserControl].DataContext.MarcarPausadoCommand}" CommandParameter="{Binding}" />
+                                                    <Button Content="Concluído" FontSize="11.5" Padding="10,5"
+                                                            Command="{Binding $parent[UserControl].DataContext.MarcarConcluidoCommand}" CommandParameter="{Binding}" />
+                                                    <Button Content="Reimprimir folha" FontSize="11.5" Padding="10,5"
+                                                            Command="{Binding $parent[UserControl].DataContext.ReimprimirFolhaCommand}" CommandParameter="{Binding}" />
+                                                </StackPanel>
+
+                                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,10,0,0" IsVisible="{Binding !ConfirmandoExclusao}">
+                                                    <Button Content="Excluir pedido" FontSize="11.5" Padding="10,5"
+                                                            Command="{Binding $parent[UserControl].DataContext.PedirConfirmacaoDeExclusaoCommand}" CommandParameter="{Binding}" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,10,0,0" IsVisible="{Binding ConfirmandoExclusao}">
+                                                    <Button Content="Excluir mesmo — o pedido some, os trabalhos ficam" FontSize="11.5" Padding="10,5"
+                                                            Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                                                            Command="{Binding $parent[UserControl].DataContext.ExcluirCommand}" CommandParameter="{Binding}" />
+                                                    <Button Content="Não" FontSize="11.5" Padding="10,5"
+                                                            Command="{Binding $parent[UserControl].DataContext.CancelarExclusaoCommand}" CommandParameter="{Binding}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

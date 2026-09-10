@@ -8,6 +8,12 @@ public enum TipoDeTela
     ProjetoEditor,
     Encaixe,
     Vetor,
+    Impressoras,
+    Maquinas,
+    Historico,
+    Reposicao,
+    Pedidos,
+    OrdensDeServico,
     Disparo,
     Configuracoes,
 }

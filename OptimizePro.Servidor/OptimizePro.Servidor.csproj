@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Kestrel/SignalR/Minimal API sem virar um projeto "Sdk.Web" — o app continua sendo um
+         WinExe desktop (Optimize.App); isto só dá acesso às APIs do ASP.NET Core (§22.2). -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OptimizePro.Data\OptimizePro.Data.csproj" />
+    <ProjectReference Include="..\OptimizePro.Core\OptimizePro.Core.csproj" />
+    <ProjectReference Include="..\OptimizePro.Services\OptimizePro.Services.csproj" />
+  </ItemGroup>
+
+</Project>

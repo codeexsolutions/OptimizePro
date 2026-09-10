@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>dd9eff68-b173-4338-94ad-b8b24a7099f6</UserSecretsId>
+  </PropertyGroup>
+
+  <!--
+    Diferente do OptimizePro.Servidor (embutido no processo do Optimize.App, por isso um
+    projeto Sdk comum "hospedando" ASP.NET Core via FrameworkReference): este é o backend
+    CENTRAL de verdade (§24) — hospedado fora do PC do cliente, multi-tenant de verdade
+    (várias instalações mandam dados pra cá). Sdk.Web normal, porque é pra isso que ele existe.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\OptimizePro.Core\OptimizePro.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+    <!-- Sessão do painel remoto (§24.4) — token assinado em vez de sessão com estado no
+         servidor: a Central não guarda "quem está logado", só confere a assinatura a cada
+         requisição. -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OptimizePro.Central.Tests" />
+  </ItemGroup>
+
+</Project>

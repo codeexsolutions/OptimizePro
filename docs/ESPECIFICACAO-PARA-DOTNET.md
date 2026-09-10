@@ -2297,3 +2297,245 @@ porém, eram genuínas e portáveis:
 > call site, `EncaixeService.BuscarMelhorEncaixeAsync`). Estender essa reserva pro motor de
 > vãos e remedir NESSA configuração é o próximo passo concreto, se algum dia valer a pena
 > revisitar — não escopado aqui.
+
+---
+
+## 22. Frota de impressoras — novo domínio (09/09/2026, escopo autorizado)
+
+O `optmize-full` mesclou (ainda não commitado do lado dele) um domínio inteiramente novo:
+gestão de frota de impressoras — acompanhamento EM TEMPO REAL e DEPOIS da impressão,
+diferente de Moldes/Projetos/Encaixe/Vetor (que são todos ANTES de imprimir). O usuário
+autorizou portar isso pro OptimizePro (09/09/2026), depois de eu investigar a fundo o
+domínio de origem (backend `impressoras/*.js`, telas React `src/telas/{Impressoras,
+Pedidos,Maquinas,Whatsapp,Historico,Reposicao}.tsx`) e apresentar um plano faseado.
+
+### 22.1 O que cada sub-recurso faz
+
+- **Impressoras** — painel "o que está saindo agora": status online/offline por máquina,
+  resumo do dia (peças/metros/m²/tinta/erros), cor de tinta baixa, progresso ao vivo.
+- **Pedidos** — fila da calandra: agrupa trabalhos já impressos num QR code só; um leitor
+  físico separado (scanner, hoje aguardando chegar — ver §22.3) é quem marca ok/erro depois
+  de escanear de verdade. A tela NUNCA deixa marcar manualmente, de propósito — pra nunca
+  divergir do que aconteceu na máquina de verdade.
+- **Máquinas** — cadastro de impressora. Sem lista fixa: varredura de rede local (SMB/
+  NetBIOS) acha candidatas, reconhece 3 "famílias" só pelos arquivos que cada uma deixa na
+  pasta compartilhada (csv/xml/binário "AT"), humano confirma o nome antes de salvar.
+- **WhatsApp** — bot que avisa num grupo (início/fim de impressão, tinta baixa). **Adiado**
+  (ver §22.2) — implementa por último, sem bloquear o resto.
+- **Histórico** — livro de registro pesquisável de tudo já impresso, com preview.
+- **Reposição** — relatório de quanto tecido foi gasto refazendo trabalho (filtra histórico
+  por "reposic" no nome/tarefa, soma por semana ISO).
+- **Ordens de Serviço** — formulário manual de ordem de produção com imagens de referência.
+  Na referência é "dívida consciente" (tabelas existem, tela nunca foi construída); aqui o
+  usuário decidiu construir a TELA COMPLETA (criar + excluir), não só o modelo de dados.
+
+### 22.2 Decisões de arquitetura (confirmadas com o usuário, 09/09/2026)
+
+> **1. Vários computadores precisam ver o painel ao mesmo tempo** (não só a máquina que
+> roda o app) — isso muda a arquitetura de raiz: o OptimizePro precisa virar
+> **cliente-servidor de verdade** nesse módulo, algo que ele nunca teve até agora (hoje é
+> 100% em processo, Avalonia+EF Core, sem nenhuma superfície de rede). Implica hospedar um
+> servidor HTTP embutido dentro do `Optimize.App` (Kestrel/ASP.NET Core minimal API rodando
+> como parte do mesmo processo desktop, escutando em `0.0.0.0` como a referência já faz) +
+> um mecanismo de push em tempo real (SignalR é o análogo direto do socket.io da
+> referência). Isso é bem mais estrutural que "SignalR substituindo Socket.IO" cogitado no
+> §18 original pro app inteiro — aqui é escopado só pra este módulo nascer com servidor,
+> não o app inteiro virar client-server de uma vez.
+>
+> **2. Bot de WhatsApp fica pra depois** — não existe biblioteca .NET madura pro protocolo
+> do WhatsApp Web (o espaço todo — Baileys e afins — é JS nativo). Quando entrar, vai
+> precisar de um processo Node auxiliar (mesmo padrão arquitetural do `VetorGpl`/
+> `PotraceProcessoService` — processo externo, comunicação por canal bem definido — só que
+> aqui o motivo é "só existe implementação madura em JS", não licença GPL).
+>
+> **3. O scanner físico da calandra está a caminho** (ainda não chegou, mas é real, não
+> conceitual) — o servidor embutido (decisão 1) precisa expor desde já um endpoint mínimo
+> equivalente a `GET /api/scan/:code` pra esse dispositivo (hoje um Raspberry Pi na
+> referência) bater quando existir, mesmo sem poder testar contra o hardware ainda.
+>
+> **4. Sem restrição de rede** pra varredura de rede local (`nbtstat`/`ping -a`/`net view`
+> — a mesma técnica da referência, portando quase literal via `Process.Start`).
+>
+> **5. Mesma licença** — o módulo de impressoras não vira um tier separado; entra dentro da
+> licença já existente (`LicencaService`), sem gate adicional.
+>
+> **6. Nomenclatura em português** — diferente da referência (que manteve inglês nos campos
+> de propósito, pra evitar bug de tradução numa base já grande e testada), as novas
+> entidades (`Maquina`, `RegistroDeImpressao`, `Pedido`, `OrdemDeServico`, etc.) seguem o
+> padrão do resto do OptimizePro (`Molde`, `Projeto`) — nomes em português.
+
+### 22.3 Ordem de porte (dependência → risco → valor)
+
+1. Infraestrutura de servidor embutido (Kestrel/SignalR dentro do `Optimize.App`) + modelo
+   de dados (`Maquina`, `RegistroDeImpressao`) + tela de cadastro de máquina (com a
+   varredura de rede). Nada do resto funciona sem isso.
+2. Leitores de histórico (3 formatos: csv/xml/binário "AT") + tela Histórico.
+3. Varredura ao vivo (substituindo o `setInterval`+socket.io da referência por um serviço
+   de fundo no .NET + SignalR) + painel Impressoras.
+4. Reposição (relatório derivado, sem leitor novo — "vitória rápida" depois do passo 2).
+5. Pedidos/calandra + QR + o endpoint `/api/scan/:code` pro scanner físico.
+6. Ordens de Serviço — tela completa (criar + excluir), decisão do usuário (09/09/2026)
+   difere da própria referência, que deixou só o modelo de dados sem tela.
+7. Bot de WhatsApp — por último, de propósito (ver §22.2, decisão 2).
+
+**Não portado ainda, aguardando implementação**: tudo acima é o plano; a implementação em
+si começa por este documento sendo atualizado a cada etapa concluída, no mesmo padrão de
+rigor das seções anteriores (medir/testar antes de dar por pronto).
+
+### 22.4 Passo 1 concluído (09/09/2026) — infraestrutura de servidor + modelo de dados + Máquinas
+
+- `OptimizePro.Servidor` (projeto novo): `ServidorDoPainel` (Kestrel embutido no processo do
+  `Optimize.App`, ouvindo em `0.0.0.0:8000` — mesma porta da referência) + `PainelHub`
+  (esqueleto de SignalR, sem eventos ainda — entram junto com o polling ao vivo no passo 3).
+  Sobe só depois da licença liberada; falha ao subir não derruba o app desktop.
+- Endpoint `GET /api/scan/{codigo}` já criado (resolve por `PedidoItem.Id` ou `RegistroId`) —
+  o scanner físico (Raspberry Pi/calandra) ainda está a caminho, mas o formato de resposta já
+  está pronto pra quando chegar.
+- Modelo de dados: `Maquina`, `RegistroDeImpressao`, `OrdemDeServico`, `OrdemDeServicoImagem`,
+  `Pedido`, `PedidoItem` — nomes em português (decisão do usuário, diferente da referência).
+- `VarreduraDeRedeService` (porte de `discovery.js`): varredura de subrede, `nbtstat`/`ping -a`
+  pra nome NetBIOS, `net view` pra compartilhamentos, fingerprint csv/xml/at-binário.
+  `GerenciadorDeVarredura` (singleton) guarda o estado "uma varredura por vez", igual à
+  referência. Tela Máquinas com varredura + cadastro de pendente + desativar/reativar/excluir.
+- Verificado rodando de verdade: app aberto, varredura real disparada (506 endereços da rede
+  local), progresso ao vivo, conclusão limpa.
+
+### 22.5 Passo 2 concluído (09/09/2026) — leitores de histórico + tela Histórico
+
+- Três leitores em `OptimizePro.Services/Impressoras/Historico/` (portes de
+  `impressoras/sources/*.js`): `LeitorCsvHistorico`, `LeitorXmlHistorico`,
+  `LeitorAtBinarioHistorico` — cada um com `LerIntervaloAsync` + `AssinaturaAsync` (tamanho +
+  data de modificação, pra pular releitura cara quando nada mudou).
+  - **Gap consciente**: `LeitorCsvHistorico` não porta o estimador de dimensão por calibração
+    de BMP de preview (fallback de um fallback do `csvHistory.js`, só entra quando o registro é
+    recorte/mosaico E o `Joblist.xml` não tem a metragem). Sem isso, esse caso raro entra com
+    comprimento/área zerados em vez de estimados pela imagem.
+- `RegistroDeImpressaoRepository.SalvarLoteAsync` — upsert em lote com a mesma proteção de
+  tinta de `db/records.js` (porte exato das duas regras CASE: estimativa por área nunca
+  sobrescreve contador CMYK exato; releitura sem canais nunca zera canais já gravados). Só
+  grava registro de máquina que ainda existe.
+- `Maquina.UltimaAssinaturaHistorico` (coluna nova, migração
+  `AdicionaAssinaturaDeHistoricoNaMaquina`) guarda a assinatura da última sincronização.
+- `SincronizadorDeHistoricoService` + `IHistoricoService` (fachada da tela: `ObterAsync` só lê
+  o banco local, `AtualizarAgoraAsync` dispara a releitura de verdade nas máquinas).
+- Tela Histórico: período (De/Até/Máquina/busca por nome — busca é local, mesma decisão de
+  `Historico.tsx`), 6 indicadores (Trabalhos/Concluídos/Cancelados/Metragem/Tempo/Tinta),
+  tabela de trabalhos. Botão "Atualizar agora" dispara a sincronização real.
+  - **Gap consciente**: só o modo "Lista" da referência — o modo "Produção" (cartões com
+    preview de imagem), a seleção de itens e o lançamento de pedido/impressão de folha ficam
+    para quando as telas de Pedidos e o servidor de preview existirem (passos 3 e 5).
+- 12 testes novos cobrindo os três leitores (incluindo o caso de cópias repetidas do
+  PrinterManager e progresso cancelado/concluído do binário AT) e as duas regras de proteção
+  de tinta do upsert. 476 testes passando no total.
+
+### 22.6 Passo 3 concluído (10/09/2026) — varredura ao vivo + painel Impressoras
+
+- `PollingDeImpressorasService` (`OptimizePro.Servidor`, `BackgroundService` hospedado dentro
+  do `WebApplication` do `ServidorDoPainel`) — porte reduzido de
+  `impressoras/services/realtime.js`: a cada 5s (1,5s na referência; folga aceitável porque
+  quem filtra o que importa é a assinatura, não o intervalo) relê a assinatura de cada máquina
+  habilitada e só releva o histórico de verdade quando ela mudou, gravando pelo mesmo
+  `RegistroDeImpressaoRepository.SalvarLoteAsync` guardado do passo 2. Eventos emitidos pelo
+  `PainelHub` com os MESMOS nomes da referência (`machine-status`, `history-updated`,
+  `new-print`) — um cliente remoto futuro reconheceria o contrato sem tradução.
+  - **Gap consciente**: não porta o streaming de percentual de progresso das máquinas AT
+    (06/07) durante a impressão (`emitAtProgress`) nem os alertas de nível de tinta baixa
+    (XML, `inkLevelState.js`) — os dois dependem de subsistemas próprios ainda não portados.
+    O que chega é "máquina on-line/off-line" e "trabalho novo apareceu/terminou", que já é
+    painel útil sem essas duas camadas.
+- `IStatusDeMaquinaStore` (singleton dentro do processo do servidor embutido) — o estado
+  on-line/off-line que o polling escreve e o novo endpoint `GET /api/impressoras/status` lê;
+  existe pra dar ao painel uma leitura "pull" imediata ao abrir/reconectar, antes do primeiro
+  evento "push" do SignalR chegar.
+- `ClientePainelEmTempoReal` (`Optimize.App`, singleton): a tela local conecta no servidor
+  embutido pelo MESMO caminho (`http://localhost:8000/hub/painel` + o endpoint de status) que
+  um painel remoto usaria pela rede — decisão deliberada pra não ganhar um atalho "em
+  processo" que só a tela local poderia usar, coerente com o motivo original de virar
+  cliente-servidor (§22.2, "várias pessoas vendo o painel ao mesmo tempo").
+- Tela Impressoras: um cartão por máquina (nome, tipo, bolinha verde/vermelha/cinza de
+  status, trabalhos e metragem de hoje, último trabalho) — porte bem reduzido de
+  `Impressoras.tsx` (sem os níveis de tinta, status do WhatsApp e outras métricas que dependem
+  de subsistemas não portados). Atualiza sozinho ao receber qualquer evento do hub.
+- Verificado rodando de verdade: servidor sobe, `/api/impressoras/status` responde `{}` sem
+  máquina cadastrada, hub negocia, tela abre com o estado vazio correto, sem exceções no log.
+
+### 22.7 Passo 4 concluído (10/09/2026) — Reposição
+
+- `ReposicaoService` (porte de `GET /api/impressoras/reposicao`): reconhece reposição pela
+  palavra "reposição" no nome do arquivo (sem acento/caixa — porte de `normalizeText`),
+  agrupa por semana de segunda a domingo (porte de `weekBounds`, não a semana do calendário),
+  soma metragem/quantidade por semana e no total. Reaproveita
+  `IRegistroDeImpressaoRepository.ListarTodosAsync` (novo — porte de `queryAll`).
+  - **Lembrete que vale repetir aqui**: o número é um piso, não um total — reposição que
+    ninguém escreveu no nome não aparece. Não é uma limitação do porte, é a mesma convenção
+    da referência (decisão da produção, não do sistema).
+- Tela Reposição: metragem total em destaque + resumo, acordeão por semana (mais recente já
+  vem aberta, como na referência) com os trabalhos de cada semana ao expandir. Atualiza
+  sozinho em `new-print`/`history-updated` via o mesmo `ClientePainelEmTempoReal`.
+- 3 testes novos (reconhecimento sem acento/caixa, agrupamento correto de segunda a domingo,
+  lista vazia sem reposição). 479 testes passando no total.
+- Verificado rodando de verdade: tela abre, mostra o estado vazio correto sem dado nenhum.
+
+### 22.8 Passo 5 concluído (10/09/2026) — Pedidos/calandra + QR + scan
+
+- `PedidoRepository`/`PedidoService` (porte de `db/pedidos.js`+`routes/pedidos.js`, sem o
+  `/preview` de sugestão de OS — ver gap abaixo): criar (com posição de entrada preservada),
+  listar (com contadores ok/erro agregados, porte de `listPedidos`), obter com itens, excluir,
+  mudar andamento (aberto/pausado/concluído), marcar resultado de um item (o que o app da
+  calandra vai chamar).
+- `TextoDeImpressoras` (novo, compartilhado com `ReposicaoService`): `Normalizar` (porte de
+  `normalizeText`) e `SepararClienteETecido` (porte de `parseClientFabric` — convenção
+  "CLIENTE - TECIDO.prt" da fábrica) — preenche `NomeDoCliente`/`Tecido` de cada item ao criar
+  o pedido, sem precisar digitar nada.
+- **QR**: em vez de portar o encoder ISO/IEC 18004 que a referência escreveu à mão (só pra
+  evitar `npm install` de novo — motivo específico do Node, não de .NET), usamos a lib QRCoder
+  (MIT). `CodigoDeQr.GerarCurto` porta exatamente `qrShortCode` (prefixo + 10 hex do SHA-1).
+  `GeradorDeFolhaDePedido` gera a folha em HTML (com o QR de cada item e o QR do pedido
+  inteiro embutidos como PNG base64) — abre no navegador padrão pra imprimir, igual à
+  referência (que também só abre uma aba, sem imprimir sozinha).
+- **Scan** (`GET /api/scan/{codigo}` no `ServidorDoPainel`, agora com o formato real da
+  referência — antes era um placeholder por falta de ter lido `qrShortCode`): resolve prefixo
+  "R" (um trabalho, com o contexto do pedido se estiver em algum) e "P" (o pedido inteiro,
+  todos os itens na ordem). Prefixo "O" (Ordem de Serviço) fica pro passo 6. Novo endpoint
+  `POST /api/impressoras/pedidos/{id}/itens/{itemId}/resultado` — o que o app da calandra
+  chama depois que o operador confirma OK/erro; emite `pedido-item-atualizado` no hub.
+- Histórico ganhou a seleção (`Marcado` em cada linha) + o cartão "N trabalho(s) marcado(s)"
+  com o botão "Lançar pedido" — o pedido nasce lá, igual à referência.
+- Tela Pedidos: acordeão por pedido (mesmo padrão visual de Reposição), progresso da calandra
+  (ok/total, com erro contado à parte — nunca somado ao "feito"), trocar andamento, reimprimir
+  folha, excluir com confirmação em duas etapas.
+  - **Coerente com a própria referência atual**: `Pedidos.tsx` já não deixa escolher OS pra um
+    item (a tela de OS "saiu do sistema" há um tempo lá) — então não portar o `/preview` de
+    sugestão de OS não é uma regressão em relação ao que a referência faz hoje, mesmo com o
+    plano de reconstruir Ordens de Serviço no passo 6.
+- 9 testes novos (criação com posições corretas, resultado de item, proteção contra item de
+  outro pedido, exclusão em cascata, busca por registro de origem, `parseClientFabric`,
+  `qrShortCode`). 495 testes passando no total. Verificado rodando de verdade: telas Pedidos e
+  Histórico abrem com o estado vazio correto, sem exceções.
+
+### 22.9 Passo 6 concluído (10/09/2026) — Ordens de Serviço
+
+- `OrdemDeServicoRepository`/`OrdemDeServicoService` (porte de `db/serviceOrders.js`, sem a
+  distinção `isBlouse`/`quantity` por imagem — ver gap abaixo): criar (com imagens já na
+  posição de entrada), listar (com busca por cliente/tecido via `LIKE`, porte de `listOrders`),
+  obter com as imagens, obter uma imagem (bytes+tipo), excluir.
+  - **Gap consciente**: a referência guarda `isBlouse`/`quantity` por imagem (contagem de
+    blusas na arte) — não portado por não termos o caso de uso que o motivou claro o
+    suficiente pra desenhar direito; as imagens entram só como referência visual por ora.
+- Tela **Ordens de Serviço**: lista com busca, formulário completo pra nova OS (cliente,
+  tecido, tamanho, metros, operador, máquina, data, observação, múltiplas imagens via
+  `StorageProvider.OpenFilePickerAsync` — mesmo padrão já usado em `VetorView`), excluir com
+  confirmação em duas etapas. **Sem edição** — a decisão do usuário (09/09/2026) foi
+  explicitamente "criar E excluir", então só essas duas operações entraram; editar uma OS já
+  criada fica pra quando (se) for pedido.
+  - **Diferença deliberada da referência atual**: `serviceOrders.js`/sua tela foram removidos
+    do optmize-full (só o modelo de dados ficou) — aqui é tela completa, decisão do usuário.
+- Fecha as duas pontas que ficaram pendentes do passo 5: o prefixo "O" do
+  `GET /api/scan/{codigo}` (resolve uma OS pelo código curto) agora está implementado; o
+  `/preview` de sugestão de OS ao lançar um pedido (`findMatchingOrder`/`findHistoryMatches`
+  de `matching.js`) continua fora de escopo — é um "nice to have" de UX, não bloqueia nada, e
+  fica pra quando o fluxo de Pedidos precisar dele de verdade.
+- 4 testes novos (posições das imagens, busca por cliente/tecido, leitura de imagem por id,
+  exclusão em cascata). 499 testes passando no total. Verificado rodando de verdade: build
+  limpo, app abre, item "Ordens de Serviço" aparece corretamente no menu com ícone/apoio
+  certos, sem exceções no log.

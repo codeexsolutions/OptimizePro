@@ -3,6 +3,13 @@
   <Project Path="OptimizePro.Core/OptimizePro.Core.csproj" Id="b37bd2d7-9e4b-47a0-9f32-f8b4d7cf132e" />
   <Project Path="OptimizePro.Data/OptimizePro.Data.csproj" Id="5661bebc-af80-4564-aa1d-5f2e5875f3b7" />
   <Project Path="OptimizePro.Services/OptimizePro.Services.csproj" Id="9e08e153-27f8-4d8e-9d1f-a202a5ae0297" />
+  <Project Path="OptimizePro.Servidor/OptimizePro.Servidor.csproj" />
+  <Project Path="OptimizePro.Painel/OptimizePro.Painel.csproj" />
+  <Project Path="tests/OptimizePro.Painel.Tests/OptimizePro.Painel.Tests.csproj" />
+  <Project Path="OptimizePro.Central/OptimizePro.Central.csproj" />
+  <Project Path="tests/OptimizePro.Central.Tests/OptimizePro.Central.Tests.csproj" />
+  <Project Path="OptimizePro.Sincronizacao/OptimizePro.Sincronizacao.csproj" />
+  <Project Path="tests/OptimizePro.Sincronizacao.Tests/OptimizePro.Sincronizacao.Tests.csproj" />
   <Project Path="OptimizePro.Licenciamento/OptimizePro.Licenciamento.csproj" />
   <Project Path="Ferramentas/GeradorDeLicenca/GeradorDeLicenca.csproj" />
   <Project Path="Ferramentas/GeradorDeLicenca.UI/GeradorDeLicenca.UI.csproj" />

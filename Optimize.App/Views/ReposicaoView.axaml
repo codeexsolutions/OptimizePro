@@ -1,0 +1,97 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Optimize.App.ViewModels"
+             xmlns:conv="using:Optimize.App.Converters"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+             x:Class="Optimize.App.Views.ReposicaoView"
+             x:DataType="vm:ReposicaoViewModel">
+
+    <ScrollViewer>
+        <StackPanel Spacing="20" MaxWidth="900" HorizontalAlignment="Stretch">
+
+            <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                    CornerRadius="4" Padding="10,8"
+                    IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding MensagemDeErro}" FontSize="12" TextWrapping="Wrap" />
+            </Border>
+
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Reposição" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock TextWrapping="Wrap" FontSize="13" Opacity="0.65"
+                               Text="Trabalho refeito, por semana. Reconhecido pela palavra &quot;reposição&quot; no nome do arquivo." />
+
+                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding Carregando}" Margin="0,6,0,0" />
+
+                    <TextBlock IsVisible="{Binding MostrarVazio}" FontSize="13" Opacity="0.7"
+                               Text="Nenhuma reposição no histórico. Ou não houve, ou o nome do arquivo não trazia a palavra." />
+
+                    <StackPanel IsVisible="{Binding TemDados}" Margin="0,4,0,0" Spacing="2">
+                        <TextBlock Text="{Binding MetragemTotal}" FontSize="34" FontWeight="SemiBold"
+                                   FontFamily="{DynamicResource FonteMono}" Foreground="{DynamicResource SystemAccentColor}" />
+                        <TextBlock Text="{Binding Resumo}" FontSize="12.5" Opacity="0.65" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20"
+                    IsVisible="{Binding TemDados}">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Por semana" FontSize="16" FontWeight="SemiBold" />
+                        <TextBlock Text="Da mais recente para a mais antiga. Clique para ver os trabalhos." FontSize="13" Opacity="0.65" />
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Semanas}">
+                        <ItemsControl.ItemTemplate>
+                            <!-- Sem x:DataType de propósito: os bindings $parent[UserControl].DataContext.* abaixo (AlternarCommand) não resolvem sob binding compilado. -->
+                            <DataTemplate>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                                        CornerRadius="8" Margin="0,0,0,8" ClipToBounds="True">
+                                    <StackPanel>
+                                        <Button Command="{Binding $parent[UserControl].DataContext.AlternarCommand}" CommandParameter="{Binding}"
+                                                Background="Transparent" BorderThickness="0" Padding="14,10" HorizontalContentAlignment="Stretch"
+                                                CornerRadius="0" HorizontalAlignment="Stretch">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                <ui:SymbolIcon Grid.Column="0" Symbol="{Binding Aberta, Converter={x:Static conv:BoolParaSetaConverter.Instancia}}" FontSize="13" Margin="0,0,10,0" />
+                                                <TextBlock Grid.Column="1" Text="{Binding PeriodoFormatado}" FontSize="13" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="2" Text="{Binding Quantidade, StringFormat='{}{0} trabalho(s)'}"
+                                                           FontSize="11.5" Opacity="0.6" VerticalAlignment="Center" Margin="0,0,14,0" />
+                                                <TextBlock Grid.Column="3" Text="{Binding Metragem}" FontSize="13.5" FontWeight="SemiBold"
+                                                           FontFamily="{DynamicResource FonteMono}" Foreground="{DynamicResource SystemAccentColor}"
+                                                           VerticalAlignment="Center" Width="90" TextAlignment="Right" />
+                                            </Grid>
+                                        </Button>
+
+                                        <ItemsControl ItemsSource="{Binding Itens}" IsVisible="{Binding Aberta}"
+                                                      Margin="14,0,14,10">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid ColumnDefinitions="140,120,*,Auto" Margin="0,3">
+                                                        <TextBlock Grid.Column="0" Text="{Binding DataHora}" FontSize="11.5" Opacity="0.6" FontFamily="{DynamicResource FonteMono}" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding NomeDaMaquina}" FontSize="11.5" Opacity="0.6" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Grid.Column="2" Text="{Binding Tarefa}" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Tarefa}" Margin="8,0" />
+                                                        <TextBlock Grid.Column="3" Text="{Binding Metragem}" FontSize="12" FontFamily="{DynamicResource FonteMono}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

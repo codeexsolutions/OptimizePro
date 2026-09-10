@@ -208,6 +208,97 @@ namespace OptimizePro.Data.Migrations
                     b.ToTable("encaixe_rede_pesos", (string)null);
                 });
 
+            modelBuilder.Entity("OptimizePro.Data.Entidades.Maquina", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ArquivoLogAoVivo")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("arquivo_log_ao_vivo");
+
+                    b.Property<DateTime?>("AtualizadoEm")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("atualizado_em");
+
+                    b.Property<string>("CaminhoEstatisticasDeTinta")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("caminho_estatisticas_de_tinta");
+
+                    b.Property<string>("CaminhoHistorico")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("caminho_historico");
+
+                    b.Property<string>("CaminhoListaDeTrabalhos")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("caminho_lista_de_trabalhos");
+
+                    b.Property<DateTime?>("DescobertaEm")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("descoberta_em");
+
+                    b.Property<bool>("Habilitada")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true)
+                        .HasColumnName("habilitada");
+
+                    b.Property<string>("Host")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("host");
+
+                    b.Property<string>("Ip")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("ip");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("nome");
+
+                    b.Property<string>("Origem")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("manual")
+                        .HasColumnName("origem");
+
+                    b.Property<string>("PastaLogAoVivo")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("pasta_log_ao_vivo");
+
+                    b.Property<string>("PastaLogDeStatus")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("pasta_log_de_status");
+
+                    b.Property<string>("PastaPreview")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("pasta_preview");
+
+                    b.Property<int>("Posicao")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0)
+                        .HasColumnName("posicao");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tipo");
+
+                    b.Property<string>("UltimaAssinaturaHistorico")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("ultima_assinatura_historico");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Host")
+                        .HasDatabaseName("idx_maquinas_host");
+
+                    b.ToTable("maquinas", (string)null);
+                });
+
             modelBuilder.Entity("OptimizePro.Data.Entidades.Molde", b =>
                 {
                     b.Property<int>("Id")
@@ -371,6 +462,217 @@ namespace OptimizePro.Data.Migrations
                     b.ToTable("molde_pecas", (string)null);
                 });
 
+            modelBuilder.Entity("OptimizePro.Data.Entidades.OrdemDeServico", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("data");
+
+                    b.Property<string>("Maquina")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("maquina");
+
+                    b.Property<double?>("Metros")
+                        .HasColumnType("REAL")
+                        .HasColumnName("metros");
+
+                    b.Property<string>("NomeDoCliente")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("nome_do_cliente");
+
+                    b.Property<string>("Observacao")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("observacao");
+
+                    b.Property<string>("Operador")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("operador");
+
+                    b.Property<string>("TamanhoDeImpressao")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tamanho_de_impressao");
+
+                    b.Property<string>("Tecido")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tecido");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Data")
+                        .HasDatabaseName("idx_ordens_de_servico_data");
+
+                    b.ToTable("ordens_de_servico", (string)null);
+                });
+
+            modelBuilder.Entity("OptimizePro.Data.Entidades.OrdemDeServicoImagem", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<byte[]>("Dados")
+                        .IsRequired()
+                        .HasColumnType("BLOB")
+                        .HasColumnName("dados");
+
+                    b.Property<bool>("EhBlusa")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false)
+                        .HasColumnName("eh_blusa");
+
+                    b.Property<string>("NomeDoArquivo")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("nome_do_arquivo");
+
+                    b.Property<string>("OrdemId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("ordem_id");
+
+                    b.Property<int>("Posicao")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0)
+                        .HasColumnName("posicao");
+
+                    b.Property<int?>("Quantidade")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("quantidade");
+
+                    b.Property<string>("TipoMime")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tipo_mime");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrdemId")
+                        .HasDatabaseName("idx_ordens_de_servico_imagens_ordem");
+
+                    b.ToTable("ordens_de_servico_imagens", (string)null);
+                });
+
+            modelBuilder.Entity("OptimizePro.Data.Entidades.Pedido", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("Observacao")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("observacao");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("aberto")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("pedidos", (string)null);
+                });
+
+            modelBuilder.Entity("OptimizePro.Data.Entidades.PedidoItem", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<double?>("ComprimentoDeImpressao")
+                        .HasColumnType("REAL")
+                        .HasColumnName("comprimento_de_impressao");
+
+                    b.Property<string>("Data")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("data");
+
+                    b.Property<DateTime?>("DataNaCalandra")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("data_na_calandra");
+
+                    b.Property<string>("MaquinaId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("maquina_id");
+
+                    b.Property<string>("MotivoNaCalandra")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("motivo_na_calandra");
+
+                    b.Property<string>("MotivoPersonalizadoNaCalandra")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("motivo_personalizado_na_calandra");
+
+                    b.Property<string>("NomeDaMaquina")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("nome_da_maquina");
+
+                    b.Property<string>("NomeDoCliente")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("nome_do_cliente");
+
+                    b.Property<string>("OrdemId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("ordem_id");
+
+                    b.Property<string>("PedidoId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("pedido_id");
+
+                    b.Property<int>("Posicao")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("posicao");
+
+                    b.Property<string>("RegistroId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("registro_id");
+
+                    b.Property<string>("StatusNaCalandra")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("pendente")
+                        .HasColumnName("status_na_calandra");
+
+                    b.Property<string>("Tarefa")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tarefa");
+
+                    b.Property<string>("Tecido")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tecido");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrdemId");
+
+                    b.HasIndex("RegistroId")
+                        .HasDatabaseName("idx_pedido_itens_registro");
+
+                    b.HasIndex("PedidoId", "Posicao")
+                        .HasDatabaseName("idx_pedido_itens_pedido");
+
+                    b.ToTable("pedido_itens", (string)null);
+                });
+
             modelBuilder.Entity("OptimizePro.Data.Entidades.Projeto", b =>
                 {
                     b.Property<int>("Id")
@@ -505,6 +807,148 @@ namespace OptimizePro.Data.Migrations
                     b.ToTable("projeto_pecas", (string)null);
                 });
 
+            modelBuilder.Entity("OptimizePro.Data.Entidades.RegistroDeImpressao", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<double>("AreaDeImpressao")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("REAL")
+                        .HasDefaultValue(0.0)
+                        .HasColumnName("area_de_impressao");
+
+                    b.Property<DateTime?>("AtualizadoEm")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("atualizado_em");
+
+                    b.Property<string>("CanaisDeTinta")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("canais_de_tinta");
+
+                    b.Property<bool>("Cancelada")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false)
+                        .HasColumnName("cancelada");
+
+                    b.Property<bool>("ComErro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false)
+                        .HasColumnName("com_erro");
+
+                    b.Property<double>("ComprimentoDeImpressao")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("REAL")
+                        .HasDefaultValue(0.0)
+                        .HasColumnName("comprimento_de_impressao");
+
+                    b.Property<double?>("Concluido")
+                        .HasColumnType("REAL")
+                        .HasColumnName("concluido");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("data");
+
+                    b.Property<string>("DataHora")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("data_hora");
+
+                    b.Property<bool>("EhRecorteOuMosaico")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false)
+                        .HasColumnName("eh_recorte_ou_mosaico");
+
+                    b.Property<string>("EstadoDoProgresso")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("estado_do_progresso");
+
+                    b.Property<string>("Hora")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("hora");
+
+                    b.Property<double?>("HorasDecorridas")
+                        .HasColumnType("REAL")
+                        .HasColumnName("horas_decorridas");
+
+                    b.Property<string>("MaquinaId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("maquina_id");
+
+                    b.Property<bool>("MetricaEstimada")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false)
+                        .HasColumnName("metrica_estimada");
+
+                    b.Property<string>("NomeDaMaquina")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("nome_da_maquina");
+
+                    b.Property<int?>("Passada")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("passada");
+
+                    b.Property<double?>("PercentualDeProgresso")
+                        .HasColumnType("REAL")
+                        .HasColumnName("percentual_de_progresso");
+
+                    b.Property<string>("ReferenciaDePreview")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("referencia_de_preview");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Tarefa")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tarefa");
+
+                    b.Property<int>("TempoSegundos")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0)
+                        .HasColumnName("tempo_segundos");
+
+                    b.Property<bool>("TintaExperimental")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false)
+                        .HasColumnName("tinta_experimental");
+
+                    b.Property<double>("TintaMl")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("REAL")
+                        .HasDefaultValue(0.0)
+                        .HasColumnName("tinta_ml");
+
+                    b.Property<string>("TipoDeOrigem")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tipo_de_origem");
+
+                    b.Property<double?>("Total")
+                        .HasColumnType("REAL")
+                        .HasColumnName("total");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Data")
+                        .HasDatabaseName("idx_registros_data");
+
+                    b.HasIndex("MaquinaId", "Data")
+                        .HasDatabaseName("idx_registros_maquina_data");
+
+                    b.ToTable("registros_de_impressao", (string)null);
+                });
+
             modelBuilder.Entity("OptimizePro.Data.Entidades.MoldeArte", b =>
                 {
                     b.HasOne("OptimizePro.Data.Entidades.Molde", "Molde")
@@ -538,6 +982,35 @@ namespace OptimizePro.Data.Migrations
                     b.Navigation("Molde");
                 });
 
+            modelBuilder.Entity("OptimizePro.Data.Entidades.OrdemDeServicoImagem", b =>
+                {
+                    b.HasOne("OptimizePro.Data.Entidades.OrdemDeServico", "Ordem")
+                        .WithMany("Imagens")
+                        .HasForeignKey("OrdemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ordem");
+                });
+
+            modelBuilder.Entity("OptimizePro.Data.Entidades.PedidoItem", b =>
+                {
+                    b.HasOne("OptimizePro.Data.Entidades.OrdemDeServico", "Ordem")
+                        .WithMany()
+                        .HasForeignKey("OrdemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("OptimizePro.Data.Entidades.Pedido", "Pedido")
+                        .WithMany("Itens")
+                        .HasForeignKey("PedidoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ordem");
+
+                    b.Navigation("Pedido");
+                });
+
             modelBuilder.Entity("OptimizePro.Data.Entidades.Projeto", b =>
                 {
                     b.HasOne("OptimizePro.Data.Entidades.ProjetoCliente", "Cliente")
@@ -560,6 +1033,22 @@ namespace OptimizePro.Data.Migrations
                     b.Navigation("Projeto");
                 });
 
+            modelBuilder.Entity("OptimizePro.Data.Entidades.RegistroDeImpressao", b =>
+                {
+                    b.HasOne("OptimizePro.Data.Entidades.Maquina", "Maquina")
+                        .WithMany("Registros")
+                        .HasForeignKey("MaquinaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Maquina");
+                });
+
+            modelBuilder.Entity("OptimizePro.Data.Entidades.Maquina", b =>
+                {
+                    b.Navigation("Registros");
+                });
+
             modelBuilder.Entity("OptimizePro.Data.Entidades.Molde", b =>
                 {
                     b.Navigation("Artes");
@@ -570,6 +1059,16 @@ namespace OptimizePro.Data.Migrations
             modelBuilder.Entity("OptimizePro.Data.Entidades.MoldeArte", b =>
                 {
                     b.Navigation("Pecas");
+                });
+
+            modelBuilder.Entity("OptimizePro.Data.Entidades.OrdemDeServico", b =>
+                {
+                    b.Navigation("Imagens");
+                });
+
+            modelBuilder.Entity("OptimizePro.Data.Entidades.Pedido", b =>
+                {
+                    b.Navigation("Itens");
                 });
 
             modelBuilder.Entity("OptimizePro.Data.Entidades.Projeto", b =>

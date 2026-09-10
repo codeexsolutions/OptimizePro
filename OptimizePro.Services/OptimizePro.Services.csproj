@@ -22,6 +22,10 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
     <!-- Exportação de Vetor pra PDF (§20, "Salvar como") — MIT, sem conflito de licença. -->
     <PackageReference Include="PDFsharp" Version="6.2.4" />
+    <!-- QR da folha de pedido (§22.8) — a referência escreveu o encoder à mão só pra não
+         rodar "npm install" de novo (motivo específico do Node); em .NET já puxamos pacotes
+         livremente, então uma lib madura (MIT) vale mais que reimplementar ISO/IEC 18004. -->
+    <PackageReference Include="QRCoder" Version="1.6.0" />
   </ItemGroup>
 
   <ItemGroup>

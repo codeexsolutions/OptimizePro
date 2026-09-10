@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!--
+    Contexto deliberadamente separado (pedido do usuário, 10/09/2026): o painel do
+    proprietário (dashboard, usuários, faturamento) é um domínio à parte do "chão de
+    fábrica" (Máquinas/Histórico/Pedidos/OS em OptimizePro.Data+Services+Servidor) — outro
+    schema (PainelDbContext, tabela de migrations própria), outro ciclo de vida, pra
+    atualizações num lado não arriscarem o outro. Só referencia OptimizePro.Core (tipos
+    puros, sem EF/infra) — nunca OptimizePro.Data/Services, de propósito.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\OptimizePro.Core\OptimizePro.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OptimizePro.Painel.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,169 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Optimize.App.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="750"
+             x:Class="Optimize.App.Views.OrdensDeServicoView"
+             x:DataType="vm:OrdensDeServicoViewModel">
+
+    <ScrollViewer>
+        <StackPanel Spacing="20" MaxWidth="920" HorizontalAlignment="Stretch">
+
+            <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                    CornerRadius="4" Padding="10,8"
+                    IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding MensagemDeErro}" FontSize="12" TextWrapping="Wrap" />
+            </Border>
+
+            <!-- Formulário de nova OS -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20"
+                    IsVisible="{Binding MostrandoFormulario}">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="Nova ordem de serviço" FontSize="16" FontWeight="SemiBold" />
+
+                    <Grid ColumnDefinitions="*,*">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Cliente" FontSize="12" Opacity="0.7" />
+                            <TextBox Text="{Binding NomeDoCliente}" Watermark="Nome do cliente" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Tecido" FontSize="12" Opacity="0.7" />
+                            <TextBox Text="{Binding Tecido}" Watermark="Ex.: Malha PV" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*,*">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Tamanho de impressão" FontSize="12" Opacity="0.7" />
+                            <TextBox Text="{Binding TamanhoDeImpressao}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Metros" FontSize="12" Opacity="0.7" />
+                            <TextBox Text="{Binding Metros}" Watermark="0,00" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="4">
+                            <TextBlock Text="Data" FontSize="12" Opacity="0.7" />
+                            <DatePicker SelectedDate="{Binding Data}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,10,0">
+                            <TextBlock Text="Operador" FontSize="12" Opacity="0.7" />
+                            <TextBox Text="{Binding Operador}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Máquina" FontSize="12" Opacity="0.7" />
+                            <TextBox Text="{Binding Maquina}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Observação" FontSize="12" Opacity="0.7" />
+                        <TextBox Text="{Binding Observacao}" AcceptsReturn="True" TextWrapping="Wrap" Height="60" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="Imagens de referência" FontSize="12" Opacity="0.7" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Name="BotaoEscolherImagens" Content="+ Adicionar imagem" FontSize="12" Padding="10,5" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding ImagensEscolhidas}" IsVisible="{Binding TemImagensEscolhidas}">
+                            <ItemsControl.ItemTemplate>
+                                <!-- Sem x:DataType de propósito: o binding $parent[UserControl].DataContext.* abaixo não resolve sob binding compilado. -->
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,6" Margin="0,0,0,4">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Grid.Column="0" Text="{Binding NomeDoArquivo}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                            <Button Grid.Column="1" Content="×" FontSize="13" Padding="8,2"
+                                                    Command="{Binding $parent[UserControl].DataContext.RemoverImagemEscolhidaCommand}" CommandParameter="{Binding}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Salvar" Command="{Binding SalvarCommand}" IsEnabled="{Binding !Salvando}"
+                                Background="{DynamicResource SystemAccentColor}" Foreground="White" Padding="14,8" CornerRadius="4" />
+                        <Button Content="Cancelar" Command="{Binding FecharFormularioCommand}" Padding="14,8" CornerRadius="4" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Lista -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,16,0">
+                            <TextBlock Text="Ordens de serviço" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock TextWrapping="Wrap" FontSize="13" Opacity="0.65"
+                                       Text="A imagem de referência pra impressão e pra calandra, por cliente." />
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="+ Nova OS" Command="{Binding AbrirFormularioCommand}"
+                                IsVisible="{Binding !MostrandoFormulario}"
+                                Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                                Padding="14,8" CornerRadius="4" VerticalAlignment="Top" />
+                    </Grid>
+
+                    <TextBox Text="{Binding Busca}" Watermark="Buscar por cliente ou tecido" />
+
+                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding Carregando}" />
+
+                    <StackPanel IsVisible="{Binding !TemOrdens}" HorizontalAlignment="Center" Spacing="10" Margin="0,24">
+                        <ui:SymbolIcon Symbol="Document" FontSize="30" Opacity="0.4" HorizontalAlignment="Center" />
+                        <TextBlock Text="Nenhuma ordem de serviço ainda" FontWeight="SemiBold" FontSize="15" HorizontalAlignment="Center" />
+                        <TextBlock TextWrapping="Wrap" TextAlignment="Center" FontSize="13" Opacity="0.6"
+                                   MaxWidth="360" HorizontalAlignment="Center"
+                                   Text="Clique em + Nova OS pra cadastrar a imagem de referência de um cliente." />
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Ordens}" IsVisible="{Binding TemOrdens}">
+                        <ItemsControl.ItemTemplate>
+                            <!-- Sem x:DataType de propósito: os bindings $parent[UserControl].DataContext.* abaixo não resolvem sob binding compilado. -->
+                            <DataTemplate>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                                        CornerRadius="8" Padding="14,10" Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                                        <ui:SymbolIcon Grid.Column="0" Symbol="Document"
+                                                       Foreground="{DynamicResource SystemAccentColor}"
+                                                       VerticalAlignment="Center" Margin="0,0,12,0" />
+                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding NomeDoCliente}" FontWeight="SemiBold" FontSize="14" />
+                                            <TextBlock FontSize="12" Opacity="0.6">
+                                                <Run Text="{Binding Tecido}" /><Run Text=" — " /><Run Text="{Binding DataFormatada}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding Metros}" FontSize="13" FontFamily="{DynamicResource FonteMono}"
+                                                   VerticalAlignment="Center" Margin="0,0,14,0" />
+                                        <TextBlock Grid.Column="3" Text="{Binding QuantidadeDeImagens, StringFormat='{}{0} imagem(ns)'}"
+                                                   FontSize="11.5" Opacity="0.55" VerticalAlignment="Center" Margin="0,0,14,0" />
+                                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" IsVisible="{Binding !ConfirmandoExclusao}">
+                                            <Button Content="Excluir" FontSize="12"
+                                                    Command="{Binding $parent[UserControl].DataContext.PedirConfirmacaoDeExclusaoCommand}" CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" IsVisible="{Binding ConfirmandoExclusao}">
+                                            <Button Content="Excluir mesmo" FontSize="12" Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                                                    Command="{Binding $parent[UserControl].DataContext.ExcluirCommand}" CommandParameter="{Binding}" />
+                                            <Button Content="Não" FontSize="12"
+                                                    Command="{Binding $parent[UserControl].DataContext.CancelarExclusaoCommand}" CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -20,8 +20,13 @@ using OptimizePro.Services.Configuracoes;
 using OptimizePro.Services.Encaixe;
 using OptimizePro.Services.Licenciamento;
 using OptimizePro.Services.Moldes;
+using OptimizePro.Services.Impressoras;
+using OptimizePro.Services.Impressoras.Historico;
 using OptimizePro.Services.Projetos;
 using OptimizePro.Services.Vetor;
+using OptimizePro.Servidor;
+using OptimizePro.Painel;
+using OptimizePro.Sincronizacao;
 
 namespace Optimize.App;
 
@@ -29,6 +34,7 @@ public partial class App : Application
 {
     private IHost? _host;
     private IServiceScope? _escopoDaSessao;
+    private ServidorDoPainel? _servidorDoPainel;
 
     public override void Initialize()
     {
@@ -59,6 +65,38 @@ public partial class App : Application
                     services.AddScoped<IEncaixeService, EncaixeService>();
                     services.AddSingleton<IVetorService, VetorService>();
                     services.AddScoped<IConfiguracaoService, ConfiguracaoService>();
+                    services.AddScoped<IMaquinaRepository, MaquinaRepository>();
+                    services.AddSingleton<VarreduraDeRedeService>();
+                    services.AddSingleton<GerenciadorDeVarredura>();
+                    services.AddScoped<IMaquinaService, MaquinaService>();
+                    services.AddScoped<IRegistroDeImpressaoRepository, RegistroDeImpressaoRepository>();
+                    services.AddSingleton<LeitorCsvHistorico>();
+                    services.AddSingleton<LeitorXmlHistorico>();
+                    services.AddSingleton<LeitorAtBinarioHistorico>();
+                    services.AddSingleton<FabricaDeLeitorDeHistorico>();
+                    services.AddScoped<SincronizadorDeHistoricoService>();
+                    services.AddScoped<IHistoricoService, HistoricoService>();
+                    services.AddScoped<IReposicaoService, ReposicaoService>();
+                    services.AddScoped<IPedidoRepository, PedidoRepository>();
+                    services.AddScoped<IPedidoService, PedidoService>();
+                    services.AddSingleton<GeradorDeFolhaDePedido>();
+                    services.AddScoped<IOrdemDeServicoRepository, OrdemDeServicoRepository>();
+                    services.AddScoped<IOrdemDeServicoService, OrdemDeServicoService>();
+                    services.AddSingleton<ClientePainelEmTempoReal>();
+
+                    // Painel do proprietário (§23) — mesmo arquivo dados.db, schema e histórico
+                    // de migrations PRÓPRIOS (nunca colidem com o OptimizeDbContext acima).
+                    services.AddDbContext<PainelDbContext>(o => o.UseSqlite(
+                        $"Data Source={caminhos.BancoDeDados}",
+                        x => x.MigrationsHistoryTable("__EFMigrationsHistory_Painel")));
+
+                    // Sincronização com a Central (§24) — best-effort; sem OPTIMIZE_CENTRAL_URL
+                    // configurada, ClienteCentralHttp.Configurado fica false e nada é enviado.
+                    services.AddSingleton(ConfiguracaoDaCentral.DoAmbiente());
+                    services.AddSingleton<IClienteCentralHttp, ClienteCentralHttp>();
+                    services.AddSingleton<ArmazenamentoDeSincronizacao>();
+                    services.AddScoped<SincronizacaoService>();
+                    services.AddHostedService<SincronizadorEmSegundoPlano>();
                     // TODO (backend): registrar aqui IDisparoService (OptimizePro.Services) —
                     // ver docs/ARQUITETURA-DOTNET-DESKTOP-MVVM.md §16.
 
@@ -82,13 +120,27 @@ public partial class App : Application
                     services.AddTransient<ProjetoEditorViewModel>();
                     services.AddTransient<EncaixeViewModel>();
                     services.AddTransient<VetorViewModel>();
+                    services.AddTransient<MaquinasViewModel>();
+                    services.AddTransient<HistoricoViewModel>();
+                    services.AddTransient<ReposicaoViewModel>();
+                    services.AddTransient<PedidosViewModel>();
+                    services.AddTransient<OrdensDeServicoViewModel>();
+                    services.AddTransient<ImpressorasViewModel>();
                     services.AddTransient<DisparoViewModel>();
                     services.AddTransient<ConfiguracoesViewModel>();
                 })
                 .Build();
 
+            // Precisa ser iniciado explicitamente pro IHostedService (SincronizadorEmSegundoPlano,
+            // §24.2) rodar de verdade — sem isto o host existe só como container de DI, e o
+            // ExecuteAsync do BackgroundService nunca dispara.
+            _host.Start();
+
             using (var escopoDeMigracao = _host.Services.CreateScope())
+            {
                 escopoDeMigracao.ServiceProvider.GetRequiredService<OptimizeDbContext>().Database.Migrate();
+                escopoDeMigracao.ServiceProvider.GetRequiredService<PainelDbContext>().Database.Migrate();
+            }
 
             // Um único escopo pra vida inteira da sessão desktop — não há "requisição" aqui
             // como numa API web; ViewModels/Services/DbContext vivem enquanto o app estiver
@@ -106,6 +158,7 @@ public partial class App : Application
             if (estadoDaLicenca.Liberado)
             {
                 desktop.MainWindow = CriarMainWindow();
+                IniciarServidorDoPainel(caminhos);
             }
             else
             {
@@ -125,6 +178,7 @@ public partial class App : Application
                     var mainWindow = CriarMainWindow();
                     desktop.MainWindow = mainWindow;
                     mainWindow.Show();
+                    IniciarServidorDoPainel(caminhos);
                 };
 
                 desktop.MainWindow = licencaWindow;
@@ -132,7 +186,9 @@ public partial class App : Application
 
             desktop.ShutdownRequested += (_, _) =>
             {
+                _servidorDoPainel?.PararAsync().GetAwaiter().GetResult();
                 _escopoDaSessao?.Dispose();
+                _host.StopAsync().GetAwaiter().GetResult();
                 _host.Dispose();
             };
         }
@@ -144,4 +200,14 @@ public partial class App : Application
     {
         DataContext = _escopoDaSessao!.ServiceProvider.GetRequiredService<MainWindowViewModel>(),
     };
+
+    // Só sobe com licença liberada (mesma trava do app inteiro) — o painel expõe dados da
+    // fábrica pra rede local, então não faz sentido ligá-lo antes da ativação (§22.2).
+    // Falha ao subir (porta ocupada, por exemplo) não deve derrubar o app desktop: só o painel
+    // remoto fica indisponível, e as telas locais continuam funcionando normalmente.
+    private void IniciarServidorDoPainel(CaminhosDoApp caminhos)
+    {
+        _servidorDoPainel = new ServidorDoPainel();
+        _ = _servidorDoPainel.IniciarAsync(caminhos.BancoDeDados);
+    }
 }

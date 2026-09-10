@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- DPAPI (ArmazenamentoDeSincronizacao) só roda no Windows — igual o resto do app (WinExe), mesma supressão que OptimizePro.Services já usa por causa do LicencaService. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
+  <!--
+    Diferente de OptimizePro.Painel/Central (isolados de propósito, §23/§24): este projeto
+    EXISTE pra fazer a ponte entre os domínios locais (chão de fábrica + painel) e a Central
+    hospedada — por isso, e só ele, referencia os três lados.
+  -->
+  <ItemGroup>
+    <!-- DPAPI pro estado local de sincronização (InstalacaoId+ChaveDeApi) — mesmo mecanismo
+         que OptimizePro.Services usa pro estado da licença, mesmo raciocínio de segurança. -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
+    <!-- BackgroundService (SincronizadorEmSegundoPlano) — mesmo pacote que OptimizePro.Servidor
+         já usa pro PollingDeImpressorasService. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OptimizePro.Core\OptimizePro.Core.csproj" />
+    <ProjectReference Include="..\OptimizePro.Data\OptimizePro.Data.csproj" />
+    <ProjectReference Include="..\OptimizePro.Painel\OptimizePro.Painel.csproj" />
+    <ProjectReference Include="..\OptimizePro.Services\OptimizePro.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OptimizePro.Sincronizacao.Tests" />
+  </ItemGroup>
+
+</Project>

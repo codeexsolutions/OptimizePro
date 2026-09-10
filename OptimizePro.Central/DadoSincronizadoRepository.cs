@@ -1,0 +1,46 @@
+using Microsoft.EntityFrameworkCore;
+
+namespace OptimizePro.Central;
+
+public sealed class DadoSincronizadoRepository(CentralDbContext db) : IDadoSincronizadoRepository
+{
+    public async Task SalvarLoteAsync(string instalacaoId, IReadOnlyList<ItemSincronizado> itens, CancellationToken ct = default)
+    {
+        if (itens.Count == 0) return;
+
+        var chaves = itens.Select(i => (i.Tipo, i.EntidadeId)).ToHashSet();
+        var existentes = await db.DadosSincronizados
+            .Where(d => d.InstalacaoId == instalacaoId)
+            .ToListAsync(ct); // uma instalação não deve ter volume grande o bastante pra isso doer; revisitar se crescer muito.
+        var existentesPorChave = existentes
+            .Where(d => chaves.Contains((d.Tipo, d.EntidadeId)))
+            .ToDictionary(d => (d.Tipo, d.EntidadeId));
+
+        foreach (var item in itens)
+        {
+            if (existentesPorChave.TryGetValue((item.Tipo, item.EntidadeId), out var existente))
+            {
+                existente.DadosJson = item.DadosJson;
+                existente.AtualizadoEm = item.AtualizadoEm;
+            }
+            else
+            {
+                db.DadosSincronizados.Add(new DadoSincronizado
+                {
+                    InstalacaoId = instalacaoId,
+                    Tipo = item.Tipo,
+                    EntidadeId = item.EntidadeId,
+                    DadosJson = item.DadosJson,
+                    AtualizadoEm = item.AtualizadoEm,
+                });
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<List<DadoSincronizado>> ListarPorTipoAsync(string instalacaoId, string tipo, CancellationToken ct = default) =>
+        await db.DadosSincronizados.AsNoTracking()
+            .Where(d => d.InstalacaoId == instalacaoId && d.Tipo == tipo)
+            .ToListAsync(ct);
+}

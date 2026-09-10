@@ -1,0 +1,144 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Optimize.App.ViewModels"
+             xmlns:conv="using:Optimize.App.Converters"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+             x:Class="Optimize.App.Views.MaquinasView"
+             x:DataType="vm:MaquinasViewModel">
+
+    <ScrollViewer>
+        <StackPanel Spacing="20" MaxWidth="920" HorizontalAlignment="Stretch">
+
+            <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                    CornerRadius="4" Padding="10,8"
+                    IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding MensagemDeErro}" FontSize="12" TextWrapping="Wrap" />
+            </Border>
+
+            <!-- Varredura de rede -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,16,0">
+                            <TextBlock Text="Varredura de rede" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock TextWrapping="Wrap" FontSize="13" Opacity="0.65"
+                                       Text="Procura impressoras na rede local e reconhece cada uma pelo compartilhamento que ela deixa exposto." />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                            <Button Content="Parar" Command="{Binding PararVarreduraCommand}"
+                                    IsVisible="{Binding VarrendoARede}" Padding="14,8" CornerRadius="4" />
+                            <Button Content="Varrer rede" Command="{Binding VarrerRedeCommand}"
+                                    IsEnabled="{Binding !VarrendoARede}"
+                                    Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                                    Padding="14,8" CornerRadius="4" />
+                        </StackPanel>
+                    </Grid>
+
+                    <ProgressBar Value="{Binding Escaneados}" Maximum="{Binding Total}"
+                                 IsVisible="{Binding VarrendoARede}" />
+
+                    <TextBlock Text="{Binding MensagemDaVarredura}" FontSize="12.5" Opacity="0.75" TextWrapping="Wrap" />
+
+                    <!-- Achadas na rede, aguardando nome -->
+                    <ItemsControl ItemsSource="{Binding Pendentes}" IsVisible="{Binding TemPendentes}">
+                        <ItemsControl.ItemTemplate>
+                            <!-- Sem x:DataType de propósito: os bindings $parent[UserControl].DataContext.* abaixo
+                                 (Cadastrar/DescartarCommand) não resolvem sob binding compilado (§ mesmo problema
+                                 documentado em MoldeWizardView.axaml). Binding clássico (reflection) resolve certo. -->
+                            <DataTemplate>
+                                <Border Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}"
+                                        CornerRadius="6" Padding="14,10" Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" VerticalAlignment="Center">
+                                        <ui:SymbolIcon Grid.Column="0" Symbol="Print" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Host}" FontWeight="SemiBold" FontSize="14" />
+                                            <TextBlock FontSize="12" Opacity="0.65">
+                                                <Run Text="{Binding RotuloDoTipo}" />
+                                                <Run Text=" — " />
+                                                <Run Text="{Binding Ip}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <TextBox Grid.Column="2" Text="{Binding NomeSugerido}" Watermark="Nome da máquina"
+                                                 Width="200" Margin="0,0,8,0" />
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
+                                            <Button Content="Cadastrar" FontSize="12"
+                                                    Command="{Binding $parent[UserControl].DataContext.CadastrarCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Background="{DynamicResource SystemAccentColor}" Foreground="White" />
+                                            <Button Content="Descartar" FontSize="12"
+                                                    Command="{Binding $parent[UserControl].DataContext.DescartarCommand}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- Máquinas cadastradas -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="Máquinas cadastradas" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <CheckBox Grid.Column="1" Content="Mostrar desativadas" IsChecked="{Binding IncluirDesabilitadas}" />
+                    </Grid>
+
+                    <StackPanel IsVisible="{Binding !TemMaquinas}" HorizontalAlignment="Center" Spacing="10" Margin="0,24">
+                        <ui:SymbolIcon Symbol="Print" FontSize="30" Opacity="0.4" HorizontalAlignment="Center" />
+                        <TextBlock Text="Nenhuma máquina cadastrada ainda" FontWeight="SemiBold" FontSize="15" HorizontalAlignment="Center" />
+                        <TextBlock TextWrapping="Wrap" TextAlignment="Center" FontSize="13" Opacity="0.6"
+                                   MaxWidth="360" HorizontalAlignment="Center"
+                                   Text="Rode a varredura de rede acima pra encontrar as impressoras da fábrica." />
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Maquinas}" IsVisible="{Binding TemMaquinas}">
+                        <ItemsControl.ItemTemplate>
+                            <!-- Sem x:DataType de propósito: mesmo caso do bloco de Pendentes acima. -->
+                            <DataTemplate>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                        CornerRadius="6" Padding="14,10" Margin="0,0,0,8" Opacity="{Binding Habilitada, Converter={x:Static conv:BoolParaOpacidadeConverter.Instancia}}">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                        <ui:SymbolIcon Grid.Column="0" Symbol="Print"
+                                                       Foreground="{DynamicResource SystemAccentColor}"
+                                                       VerticalAlignment="Center" Margin="0,0,12,0" />
+                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Nome}" FontWeight="SemiBold" FontSize="14" />
+                                            <TextBlock FontSize="12" Opacity="0.6">
+                                                <Run Text="{Binding RotuloDoTipo}" />
+                                                <Run Text=" — " />
+                                                <Run Text="{Binding Host}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12" Opacity="0.6"
+                                                   Text="{Binding Habilitada, Converter={x:Static conv:BoolParaRotuloAtivaConverter.Instancia}}" />
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
+                                            <Button Content="Desativar" FontSize="12" IsVisible="{Binding Habilitada}"
+                                                    Command="{Binding $parent[UserControl].DataContext.DesativarCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Content="Reativar" FontSize="12" IsVisible="{Binding !Habilitada}"
+                                                    Command="{Binding $parent[UserControl].DataContext.ReativarCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Content="Excluir" FontSize="12" IsVisible="{Binding !Habilitada}"
+                                                    Command="{Binding $parent[UserControl].DataContext.ExcluirCommand}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

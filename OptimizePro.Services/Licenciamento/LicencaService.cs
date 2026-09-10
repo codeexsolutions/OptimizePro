@@ -16,7 +16,7 @@ public enum SituacaoDaLicenca
     RelogioSuspeito,
 }
 
-public sealed record EstadoDaLicenca(SituacaoDaLicenca Situacao, DateOnly? ValidoAte, TipoDeLicenca? Tipo)
+public sealed record EstadoDaLicenca(SituacaoDaLicenca Situacao, DateOnly? ValidoAte, TipoDeLicenca? Tipo, uint? ClienteIdHash = null)
 {
     public bool Liberado => Situacao == SituacaoDaLicenca.Valida;
 }
@@ -80,7 +80,7 @@ public sealed class LicencaService
         var hoje = DateOnly.FromDateTime(DateTime.UtcNow);
 
         if (hoje < persistido.MaiorDataJaVista)
-            return new EstadoDaLicenca(SituacaoDaLicenca.RelogioSuspeito, info.ValidoAte, info.Tipo);
+            return new EstadoDaLicenca(SituacaoDaLicenca.RelogioSuspeito, info.ValidoAte, info.Tipo, info.ClienteIdHash);
 
         // Marca d'água sobe com o tempo — pega tentativa de atrasar o relógio a partir de
         // QUALQUER data já vista no passado, não só da primeira ativação.
@@ -88,8 +88,8 @@ public sealed class LicencaService
             SalvarEstadoPersistido(persistido with { MaiorDataJaVista = hoje });
 
         return hoje > info.ValidoAte
-            ? new EstadoDaLicenca(SituacaoDaLicenca.Expirada, info.ValidoAte, info.Tipo)
-            : new EstadoDaLicenca(SituacaoDaLicenca.Valida, info.ValidoAte, info.Tipo);
+            ? new EstadoDaLicenca(SituacaoDaLicenca.Expirada, info.ValidoAte, info.Tipo, info.ClienteIdHash)
+            : new EstadoDaLicenca(SituacaoDaLicenca.Valida, info.ValidoAte, info.Tipo, info.ClienteIdHash);
     }
 
     public ResultadoDaAtivacao Ativar(string codigoDigitado)
@@ -108,7 +108,7 @@ public sealed class LicencaService
         SalvarEstadoPersistido(new EstadoPersistido(codigo, maiorDataJaVista));
 
         var situacao = hoje < maiorDataJaVista ? SituacaoDaLicenca.RelogioSuspeito : SituacaoDaLicenca.Valida;
-        return new ResultadoDaAtivacao(true, $"Licença ativada — válida até {info.ValidoAte:dd/MM/yyyy}.", new EstadoDaLicenca(situacao, info.ValidoAte, info.Tipo));
+        return new ResultadoDaAtivacao(true, $"Licença ativada — válida até {info.ValidoAte:dd/MM/yyyy}.", new EstadoDaLicenca(situacao, info.ValidoAte, info.Tipo, info.ClienteIdHash));
     }
 
     private static ECDsa ObterChavePublica()

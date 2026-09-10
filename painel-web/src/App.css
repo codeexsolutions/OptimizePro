@@ -1,0 +1,146 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #0b0b0c;
+  color: #f5f5f5;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.carregando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #999;
+}
+
+.tela-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  padding: 16px;
+}
+
+.cartao-login {
+  width: 100%;
+  max-width: 340px;
+  background: #17171a;
+  border: 1px solid #2a2a2e;
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cartao-login h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.apoio {
+  color: #999;
+  font-size: 0.82rem;
+  margin: 0 0 8px;
+}
+
+.cartao-login label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: #ccc;
+}
+
+.cartao-login input {
+  background: #0b0b0c;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: #f5f5f5;
+  font-size: 0.9rem;
+}
+
+.cartao-login input:focus {
+  outline: none;
+  border-color: #f97316;
+}
+
+.cartao-login button {
+  margin-top: 6px;
+  background: #f97316;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  color: #1a1a1a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cartao-login button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.erro {
+  color: #f87171;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.painel {
+  min-height: 100vh;
+}
+
+.cabecalho-do-painel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #2a2a2e;
+}
+
+.cabecalho-do-painel strong {
+  display: block;
+  color: #f97316;
+}
+
+.usuario-logado {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.usuario-logado button {
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: #ccc;
+  cursor: pointer;
+}
+
+main {
+  padding: 24px;
+  max-width: 640px;
+}
+
+.lista-de-modulos {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lista-de-modulos li {
+  background: #17171a;
+  border: 1px solid #2a2a2e;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+}

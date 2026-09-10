@@ -21,6 +21,12 @@ public static class InfoDasTelas
         [TipoDeTela.ProjetoEditor] = new("Projeto", "Edição do projeto", "Ajuste as peças e mande para o encaixe.", Symbol.Folder),
         [TipoDeTela.Encaixe] = new("Encaixe", "Aproveitamento do tecido", "Otimize o uso do tecido e prepare arquivos para impressão.", Symbol.ViewAll),
         [TipoDeTela.Vetor] = new("Vetor", "Traço a partir da imagem", "Transforme uma imagem em desenho vetorial para corte e impressão.", Symbol.ImageEdit),
+        [TipoDeTela.Impressoras] = new("Impressoras", "Painel ao vivo", "Acompanhe em tempo real quais máquinas estão imprimindo agora.", Symbol.Print),
+        [TipoDeTela.Maquinas] = new("Máquinas", "Frota de impressoras", "Cadastre as impressoras da rede e acompanhe a produção.", Symbol.Print),
+        [TipoDeTela.Historico] = new("Histórico", "Trabalhos que saíram das máquinas", "Consulte, filtre e confira a metragem e a tinta de cada trabalho.", Symbol.Document),
+        [TipoDeTela.Reposicao] = new("Reposição", "Trabalho refeito, por semana", "Acompanhe quanto de metragem foi reimpresso, semana a semana.", Symbol.Refresh),
+        [TipoDeTela.Pedidos] = new("Pedidos", "A fila da calandra", "Acompanhe o andamento dos pedidos e reimprima a folha quando precisar.", Symbol.List),
+        [TipoDeTela.OrdensDeServico] = new("Ordens de Serviço", "Referência de imagem por cliente", "Cadastre a OS com a imagem de referência pra impressão e a calandra.", Symbol.Document),
         [TipoDeTela.Disparo] = new("Disparo", "Captação de lead (em stand-by)", "Envio de mensagens — recurso em pausa.", Symbol.Send),
         [TipoDeTela.Configuracoes] = new("Configurações", "Preferências do app", "Ajustes gerais do Optimize.", Symbol.Settings),
     };

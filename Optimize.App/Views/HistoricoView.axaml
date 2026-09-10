@@ -1,0 +1,179 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Optimize.App.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="750"
+             x:Class="Optimize.App.Views.HistoricoView"
+             x:DataType="vm:HistoricoViewModel">
+
+    <ScrollViewer>
+        <StackPanel Spacing="20" MaxWidth="1080" HorizontalAlignment="Stretch">
+
+            <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                    CornerRadius="4" Padding="10,8"
+                    IsVisible="{Binding MensagemDeErro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding MensagemDeErro}" FontSize="12" TextWrapping="Wrap" />
+            </Border>
+
+            <!-- Período e filtros -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="16">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,16,0">
+                            <TextBlock Text="Período" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock TextWrapping="Wrap" FontSize="13" Opacity="0.65"
+                                       Text="O resultado sai do banco local. Use &quot;Atualizar agora&quot; para reler o histórico das máquinas." />
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="Atualizar agora" Command="{Binding AtualizarAgoraCommand}"
+                                IsEnabled="{Binding !Atualizando}"
+                                Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                                Padding="14,8" CornerRadius="4" VerticalAlignment="Top" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,14,0">
+                            <TextBlock Text="De" FontSize="12" Opacity="0.7" />
+                            <DatePicker SelectedDate="{Binding DataInicio}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,14,0">
+                            <TextBlock Text="Até" FontSize="12" Opacity="0.7" />
+                            <DatePicker SelectedDate="{Binding DataFim}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="4" MaxWidth="220" HorizontalAlignment="Left" Margin="0,0,14,0">
+                            <TextBlock Text="Máquina" FontSize="12" Opacity="0.7" />
+                            <ComboBox ItemsSource="{Binding Maquinas}" SelectedItem="{Binding MaquinaSelecionada}"
+                                      DisplayMemberBinding="{Binding Nome}" HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="3" Spacing="4" Width="220">
+                            <TextBlock Text="Nome do trabalho" FontSize="12" Opacity="0.7" />
+                            <TextBox Text="{Binding Busca}" Watermark="parte do nome" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*,*,*,*,*">
+                        <Border Grid.Column="0" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,8" Margin="0,0,8,0">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Trabalhos" FontSize="11" Opacity="0.6" />
+                                <TextBlock Text="{Binding Trabalhos}" FontSize="16" FontWeight="SemiBold" FontFamily="{DynamicResource FonteMono}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,8" Margin="0,0,8,0">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Concluídos" FontSize="11" Opacity="0.6" />
+                                <TextBlock Text="{Binding Concluidos}" FontSize="16" FontWeight="SemiBold" FontFamily="{DynamicResource FonteMono}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,8" Margin="0,0,8,0">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Cancelados" FontSize="11" Opacity="0.6" />
+                                <TextBlock Text="{Binding Cancelados}" FontSize="16" FontWeight="SemiBold" FontFamily="{DynamicResource FonteMono}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="3" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,8" Margin="0,0,8,0">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Metragem" FontSize="11" Opacity="0.6" />
+                                <TextBlock Text="{Binding Metragem}" FontSize="16" FontWeight="SemiBold" FontFamily="{DynamicResource FonteMono}" Foreground="{DynamicResource SystemAccentColor}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="4" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,8" Margin="0,0,8,0">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Tempo" FontSize="11" Opacity="0.6" />
+                                <TextBlock Text="{Binding Tempo}" FontSize="16" FontWeight="SemiBold" FontFamily="{DynamicResource FonteMono}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="5" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,8">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Tinta" FontSize="11" Opacity="0.6" />
+                                <TextBlock Text="{Binding Tinta}" FontSize="16" FontWeight="SemiBold" FontFamily="{DynamicResource FonteMono}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Seleção pra lançar pedido -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20"
+                    IsVisible="{Binding TemSelecao}">
+                <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="{Binding QuantidadeMarcada, StringFormat='{}{0} trabalho(s) marcado(s)'}" FontSize="15" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding MetragemMarcada, StringFormat='{}{0} no total'}" FontSize="12.5" Opacity="0.65" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="Limpar" Command="{Binding LimparSelecaoCommand}" Padding="12,6" CornerRadius="4" />
+                    </Grid>
+
+                    <Button Content="Lançar pedido" Command="{Binding LancarPedidoCommand}" IsEnabled="{Binding !LancandoPedido}"
+                            Background="{DynamicResource SystemAccentColor}" Foreground="White" Padding="14,8" CornerRadius="4"
+                            HorizontalAlignment="Left" />
+
+                    <TextBlock IsVisible="{Binding PedidoCriado}" FontSize="12.5" Foreground="{DynamicResource SystemFillColorSuccessBrush}"
+                               Text="Pedido criado. Ele está na tela de Pedidos." />
+                </StackPanel>
+            </Border>
+
+            <!-- Tabela -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="Trabalhos" FontSize="16" FontWeight="SemiBold" />
+
+                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding Carregando}" />
+
+                    <StackPanel IsVisible="{Binding !Carregando}">
+                        <StackPanel IsVisible="{Binding !TemRegistros}" HorizontalAlignment="Center" Spacing="10" Margin="0,24">
+                            <ui:SymbolIcon Symbol="Document" FontSize="30" Opacity="0.4" HorizontalAlignment="Center" />
+                            <TextBlock Text="Nenhum trabalho nesse período" FontWeight="SemiBold" FontSize="15" HorizontalAlignment="Center" />
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding TemRegistros}">
+                            <Grid ColumnDefinitions="28,150,140,*,110,110,90,120" Margin="4,0,4,6">
+                                <TextBlock Grid.Column="1" Text="Data" FontSize="11" Opacity="0.6" />
+                                <TextBlock Grid.Column="2" Text="Máquina" FontSize="11" Opacity="0.6" />
+                                <TextBlock Grid.Column="3" Text="Trabalho" FontSize="11" Opacity="0.6" />
+                                <TextBlock Grid.Column="4" Text="Metragem" FontSize="11" Opacity="0.6" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Column="5" Text="Tempo" FontSize="11" Opacity="0.6" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Column="6" Text="Tinta" FontSize="11" Opacity="0.6" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Column="7" Text="Situação" FontSize="11" Opacity="0.6" />
+                            </Grid>
+
+                            <ItemsControl ItemsSource="{Binding Registros}">
+                                <ItemsControl.ItemTemplate>
+                                    <!-- Sem x:DataType de propósito: mesmo caso documentado em MoldeWizardView.axaml (não é usado aqui, mas mantém o padrão do arquivo). -->
+                                    <DataTemplate>
+                                        <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,0,1" Padding="4,8">
+                                            <Grid ColumnDefinitions="28,150,140,*,110,110,90,120">
+                                                <CheckBox Grid.Column="0" IsChecked="{Binding Marcado}" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="1" Text="{Binding DataHora}" FontSize="12" FontFamily="{DynamicResource FonteMono}" Opacity="0.8" />
+                                                <TextBlock Grid.Column="2" Text="{Binding NomeDaMaquina}" FontSize="12" Opacity="0.8" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Grid.Column="3" Text="{Binding Tarefa}" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Tarefa}" />
+                                                <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2">
+                                                    <TextBlock Text="{Binding Metragem}" FontSize="12" FontFamily="{DynamicResource FonteMono}" />
+                                                    <TextBlock Text="~" IsVisible="{Binding MetricaEstimada}" FontSize="12" Opacity="0.6" ToolTip.Tip="Metragem deduzida, não medida" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="5" Text="{Binding Tempo}" FontSize="12" Opacity="0.8" HorizontalAlignment="Right" />
+                                                <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2">
+                                                    <TextBlock Text="{Binding Tinta}" FontSize="12" Opacity="0.8" />
+                                                    <TextBlock Text="?" IsVisible="{Binding TintaExperimental}" FontSize="12" Opacity="0.5" ToolTip.Tip="Consumo ainda não conferido contra a tela da máquina" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="7" Text="{Binding Situacao}" FontSize="12" FontWeight="SemiBold" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

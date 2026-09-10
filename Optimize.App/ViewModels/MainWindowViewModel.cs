@@ -43,6 +43,12 @@ public partial class MainWindowViewModel : ViewModelBase
         new(TipoDeTela.Projetos, "Projetos", "Produção"),
         new(TipoDeTela.Encaixe, "Encaixe", "Produção"),
         new(TipoDeTela.Vetor, "Vetor", "Produção"),
+        new(TipoDeTela.Impressoras, "Impressoras", "Produção"),
+        new(TipoDeTela.Maquinas, "Máquinas", "Produção"),
+        new(TipoDeTela.Historico, "Histórico", "Produção"),
+        new(TipoDeTela.Reposicao, "Reposição", "Produção"),
+        new(TipoDeTela.Pedidos, "Pedidos", "Produção"),
+        new(TipoDeTela.OrdensDeServico, "Ordens de Serviço", "Produção"),
         new(TipoDeTela.Disparo, "Disparo", "Comunicação"),
         new(TipoDeTela.Configuracoes, "Configurações", "Comunicação"),
     ];
