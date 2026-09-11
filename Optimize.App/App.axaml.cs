@@ -1,4 +1,6 @@
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -38,6 +40,10 @@ public partial class App : Application
     private ServidorDoPainel? _servidorDoPainel;
     private IClassicDesktopStyleApplicationLifetime? _desktop;
     private CaminhosDoApp? _caminhos;
+    private Mutex? _mutexDeInstanciaUnica;
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int MessageBox(nint hWnd, string texto, string titulo, uint tipo);
 
     public override void Initialize()
     {
@@ -48,6 +54,18 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // Trava de instância única (§ acidente de teste, 11/09/2026): abrir duas cópias do
+            // app faria as duas competirem pelo mesmo SQLite local (dados.db) — risco de
+            // corrupção/trava de arquivo, não só duas janelas redundantes. O mutex nomeado é
+            // por sessão do Windows (sem "Global\"), suficiente pra um app desktop pessoal.
+            _mutexDeInstanciaUnica = new Mutex(initiallyOwned: true, "OptimizePro.App.InstanciaUnica", out var novaInstancia);
+            if (!novaInstancia)
+            {
+                MessageBox(0, "O Optimize Pro já está aberto.", "Optimize Pro", 0x40 /* MB_ICONINFORMATION */);
+                desktop.Shutdown();
+                return;
+            }
+
             _desktop = desktop;
             var caminhos = new CaminhosDoApp();
             _caminhos = caminhos;
@@ -199,6 +217,7 @@ public partial class App : Application
                 _escopoDaSessao?.Dispose();
                 _host.StopAsync().GetAwaiter().GetResult();
                 _host.Dispose();
+                _mutexDeInstanciaUnica?.ReleaseMutex();
             };
         }
 
