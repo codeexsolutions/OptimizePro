@@ -347,14 +347,9 @@ app.MapGet("/api/faturamento", async (ClaimsPrincipal usuario, IFaturamentoServi
 }).RequireAuthorization();
 
 // Painel de staff (§26) — a Codeex Solutions gerenciando os clientes do OptimizePro, de fora
-// de qualquer instalação específica. Token completamente separado do painel do cliente: tem
-// o claim "papel=staff", nunca "instalacao_id" — por isso a checagem aqui é diferente de
-// ExigirAdministrador (aquele é "administrador DE UMA instalação", este é "funcionário da
-// empresa dona do produto").
-static IResult? ExigirStaff(ClaimsPrincipal usuario) =>
-    usuario.FindFirstValue(ClaimsDoPainel.Papel) == "staff"
-        ? null
-        : Results.Json(new { erro = "Acesso restrito à equipe Codeex Solutions." }, statusCode: StatusCodes.Status403Forbidden);
+// de qualquer instalação específica. Login/bootstrap abaixo continuam existindo (émite token
+// com o claim "papel=staff"), mas hoje nenhum endpoint exige esse token — ver
+// /api/staff/instalacoes logo abaixo.
 
 // Bootstrap do primeiro administrador de staff — mesmo raciocínio do bootstrap de usuário
 // (§24.7): só existe essa porta de entrada enquanto não houver NENHUM staff cadastrado; fecha
@@ -386,11 +381,11 @@ app.MapPost("/api/staff/login", async (RequisicaoDeLoginDeStaff corpo, IAdminist
     return Results.Ok(new { token, administrador = resultado.Administrador });
 });
 
-app.MapGet("/api/staff/instalacoes", async (ClaimsPrincipal usuario, IPainelDeStaffService painel) =>
-{
-    if (ExigirStaff(usuario) is { } bloqueado) return bloqueado;
-    return Results.Ok(await painel.ListarInstalacoesAsync());
-}).RequireAuthorization();
+// Sem autenticação, de propósito (10/09/2026, decisão do usuário) — só a Codeex Solutions
+// tem esse link, e o login de staff (acima) virou infraestrutura sem uso: mantida no backend
+// caso essa decisão mude, mas nada mais a exige.
+app.MapGet("/api/staff/instalacoes", async (IPainelDeStaffService painel) =>
+    Results.Ok(await painel.ListarInstalacoesAsync()));
 
 app.Run();
 
