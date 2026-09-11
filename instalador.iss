@@ -3,7 +3,7 @@
 ; Baixar Inno Setup: https://jrsoftware.org/isdl.php
 
 #define MyAppName "Optimize Pro"
-#define MyAppVersion "1.0.3"
+#define MyAppVersion "1.0.4"
 #define MyAppPublisher "Codeex Solutions"
 #define MyAppExeName "OptimizePro.App.exe"
 
