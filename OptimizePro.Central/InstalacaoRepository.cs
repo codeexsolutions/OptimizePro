@@ -13,6 +13,9 @@ public sealed class InstalacaoRepository(CentralDbContext db) : IInstalacaoRepos
     public async Task<Instalacao?> ObterPorCodigoAsync(string codigo, CancellationToken ct = default) =>
         await db.Instalacoes.AsNoTracking().FirstOrDefaultAsync(i => i.Codigo == codigo, ct);
 
+    public async Task<List<Instalacao>> ListarTodasAsync(CancellationToken ct = default) =>
+        await db.Instalacoes.AsNoTracking().OrderByDescending(i => i.CriadoEm).ToListAsync(ct);
+
     public async Task<Instalacao> CriarAsync(Instalacao instalacao, CancellationToken ct = default)
     {
         instalacao.Id = Guid.NewGuid().ToString();

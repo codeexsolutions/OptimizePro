@@ -24,6 +24,9 @@ builder.Services.AddScoped<IAutenticacaoDeUsuarioService, AutenticacaoDeUsuarioS
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IUsuarioAdminService, UsuarioAdminService>();
 builder.Services.AddScoped<IFaturamentoService, FaturamentoService>();
+builder.Services.AddScoped<IAdministradorRepository, AdministradorRepository>();
+builder.Services.AddScoped<IAdministradorService, AdministradorService>();
+builder.Services.AddScoped<IPainelDeStaffService, PainelDeStaffService>();
 
 var chaveSecretaDoJwt = builder.Configuration["Jwt:ChaveSecreta"]
     ?? throw new InvalidOperationException("Configure \"Jwt:ChaveSecreta\" via `dotnet user-secrets set Jwt:ChaveSecreta \"...\"` (mín. 32 caracteres).");
@@ -343,6 +346,52 @@ app.MapGet("/api/faturamento", async (ClaimsPrincipal usuario, IFaturamentoServi
         : Results.Ok(resumo);
 }).RequireAuthorization();
 
+// Painel de staff (§26) — a Codeex Solutions gerenciando os clientes do OptimizePro, de fora
+// de qualquer instalação específica. Token completamente separado do painel do cliente: tem
+// o claim "papel=staff", nunca "instalacao_id" — por isso a checagem aqui é diferente de
+// ExigirAdministrador (aquele é "administrador DE UMA instalação", este é "funcionário da
+// empresa dona do produto").
+static IResult? ExigirStaff(ClaimsPrincipal usuario) =>
+    usuario.FindFirstValue(ClaimsDoPainel.Papel) == "staff"
+        ? null
+        : Results.Json(new { erro = "Acesso restrito à equipe Codeex Solutions." }, statusCode: StatusCodes.Status403Forbidden);
+
+// Bootstrap do primeiro administrador de staff — mesmo raciocínio do bootstrap de usuário
+// (§24.7): só existe essa porta de entrada enquanto não houver NENHUM staff cadastrado; fecha
+// sozinho depois do primeiro cadastro (JaTemAdministradorException, 409).
+app.MapPost("/api/staff/bootstrap", async (RequisicaoDeBootstrapDeStaff corpo, IAdministradorService administradores) =>
+{
+    try
+    {
+        var criado = await administradores.BootstrapAsync(corpo.Email, corpo.Nome, corpo.Senha);
+        return Results.Ok(new { criado.Id, criado.Email, criado.Nome });
+    }
+    catch (JaTemAdministradorException ex)
+    {
+        return Results.Json(new { erro = ex.Message }, statusCode: StatusCodes.Status409Conflict);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.Json(new { erro = ex.Message }, statusCode: StatusCodes.Status400BadRequest);
+    }
+});
+
+app.MapPost("/api/staff/login", async (RequisicaoDeLoginDeStaff corpo, IAdministradorService administradores, EmissorDeToken emissor) =>
+{
+    var resultado = await administradores.AutenticarAsync(corpo.Email, corpo.Senha);
+    if (!resultado.Sucesso || resultado.Administrador is null)
+        return Results.Json(new { erro = resultado.Erro }, statusCode: StatusCodes.Status401Unauthorized);
+
+    var token = emissor.EmitirParaStaff(resultado.Administrador);
+    return Results.Ok(new { token, administrador = resultado.Administrador });
+});
+
+app.MapGet("/api/staff/instalacoes", async (ClaimsPrincipal usuario, IPainelDeStaffService painel) =>
+{
+    if (ExigirStaff(usuario) is { } bloqueado) return bloqueado;
+    return Results.Ok(await painel.ListarInstalacoesAsync());
+}).RequireAuthorization();
+
 app.Run();
 
 public sealed record RequisicaoDeProvisionamento(uint ClienteIdHash, string? NomeDaFabrica);
@@ -353,3 +402,5 @@ public sealed record RequisicaoDeCadastroDeUsuario(string Login, string Nome, st
 public sealed record RequisicaoDeEdicaoDeUsuario(string Nome, List<string> ModulosLiberados, bool EhAdministrador);
 public sealed record RequisicaoDeRedefinicaoDeSenha(string NovaSenha);
 public sealed record RequisicaoDeHabilitado(bool Habilitado);
+public sealed record RequisicaoDeBootstrapDeStaff(string Email, string Nome, string Senha);
+public sealed record RequisicaoDeLoginDeStaff(string Email, string Senha);

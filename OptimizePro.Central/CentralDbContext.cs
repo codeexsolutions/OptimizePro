@@ -7,6 +7,7 @@ public class CentralDbContext(DbContextOptions<CentralDbContext> options) : DbCo
 {
     public DbSet<Instalacao> Instalacoes => Set<Instalacao>();
     public DbSet<DadoSincronizado> DadosSincronizados => Set<DadoSincronizado>();
+    public DbSet<Administrador> Administradores => Set<Administrador>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,6 +41,19 @@ public class CentralDbContext(DbContextOptions<CentralDbContext> options) : DbCo
             b.HasOne(d => d.Instalacao).WithMany().HasForeignKey(d => d.InstalacaoId).OnDelete(DeleteBehavior.Cascade);
             // Consulta mais comum do painel: "tudo de um tipo desta instalação".
             b.HasIndex(d => new { d.InstalacaoId, d.Tipo });
+        });
+
+        modelBuilder.Entity<Administrador>(b =>
+        {
+            b.ToTable("administradores");
+            b.Property(a => a.Id).HasColumnName("id").ValueGeneratedNever();
+            b.Property(a => a.Email).HasColumnName("email").IsRequired();
+            b.Property(a => a.Nome).HasColumnName("nome").IsRequired();
+            b.Property(a => a.SenhaHash).HasColumnName("senha_hash").IsRequired();
+            b.Property(a => a.SenhaSal).HasColumnName("senha_sal").IsRequired();
+            b.Property(a => a.CriadoEm).HasColumnName("criado_em").IsRequired();
+
+            b.HasIndex(a => a.Email).IsUnique();
         });
     }
 }

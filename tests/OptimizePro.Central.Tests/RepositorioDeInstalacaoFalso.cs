@@ -16,6 +16,9 @@ public sealed class RepositorioDeInstalacaoFalso : IInstalacaoRepository
     public Task<Instalacao?> ObterPorCodigoAsync(string codigo, CancellationToken ct = default) =>
         Task.FromResult(_porId.Values.FirstOrDefault(i => i.Codigo == codigo));
 
+    public Task<List<Instalacao>> ListarTodasAsync(CancellationToken ct = default) =>
+        Task.FromResult(_porId.Values.OrderByDescending(i => i.CriadoEm).ToList());
+
     public Task<Instalacao> CriarAsync(Instalacao instalacao, CancellationToken ct = default)
     {
         instalacao.Id = Guid.NewGuid().ToString();
