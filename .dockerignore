@@ -1,0 +1,10 @@
+# Contexto de build só precisa de OptimizePro.Core/ e OptimizePro.Central/ (ver Dockerfile) —
+# sem isto, o Docker manda o repositório inteiro (node_modules do painel-web, bin/obj de todo
+# mundo, .git) pro daemon antes de começar a copiar qualquer coisa, o que deixa o build
+# absurdamente mais lento sem ganhar nada.
+**/bin/
+**/obj/
+.vs/
+.git/
+painel-web/node_modules/
+painel-web/dist/

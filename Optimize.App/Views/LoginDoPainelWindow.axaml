@@ -1,0 +1,41 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Optimize.App.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="360"
+        x:Class="Optimize.App.Views.LoginDoPainelWindow"
+        x:DataType="vm:LoginDoPainelViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="Optimize — Login"
+        Width="420" Height="360"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen">
+
+    <StackPanel Margin="32" Spacing="16" VerticalAlignment="Center">
+        <StackPanel Spacing="4">
+            <TextBlock Text="Entrar" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="Este computador tem usuários cadastrados no painel — informe seu login pra continuar."
+                       FontSize="13" Opacity="0.7" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <StackPanel Spacing="4">
+            <TextBlock Text="Login" FontSize="12" Opacity="0.7" />
+            <TextBox Text="{Binding Login}" Watermark="seu.login" />
+        </StackPanel>
+
+        <StackPanel Spacing="4">
+            <TextBlock Text="Senha" FontSize="12" Opacity="0.7" />
+            <TextBox Text="{Binding Senha}" PasswordChar="•" />
+        </StackPanel>
+
+        <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}" CornerRadius="4" Padding="10,8"
+                IsVisible="{Binding Erro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding Erro}" FontSize="12" TextWrapping="Wrap" />
+        </Border>
+
+        <Button Content="Entrar" Command="{Binding EntrarCommand}"
+                Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0,10" CornerRadius="4" />
+    </StackPanel>
+</Window>

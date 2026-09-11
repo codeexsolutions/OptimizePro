@@ -8,9 +8,11 @@ public sealed class ClienteCentralFalso : IClienteCentralHttp
 
     public RespostaDeProvisionamento? ProximaRespostaDeProvisionamento { get; set; }
     public bool ProximoResultadoDeEnvio { get; set; } = true;
+    public List<UsuarioDto>? ProximaListaDeUsuarios { get; set; }
 
     public int ChamadasDeProvisionar { get; private set; }
     public int ChamadasDeEnvio { get; private set; }
+    public int ChamadasDeObterUsuarios { get; private set; }
     public IReadOnlyList<ItemParaSincronizar>? UltimoLoteEnviado { get; private set; }
     public (string InstalacaoId, string ChaveDeApi)? UltimasCredenciaisUsadas { get; private set; }
 
@@ -26,5 +28,11 @@ public sealed class ClienteCentralFalso : IClienteCentralHttp
         UltimoLoteEnviado = itens;
         UltimasCredenciaisUsadas = (instalacaoId, chaveDeApi);
         return Task.FromResult(ProximoResultadoDeEnvio);
+    }
+
+    public Task<List<UsuarioDto>?> ObterUsuariosAsync(string instalacaoId, string chaveDeApi, CancellationToken ct = default)
+    {
+        ChamadasDeObterUsuarios++;
+        return Task.FromResult(ProximaListaDeUsuarios);
     }
 }

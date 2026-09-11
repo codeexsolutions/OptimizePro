@@ -23,4 +23,11 @@ public sealed record OrdemDeServicoDto(
 
 public sealed record UsuarioDto(string Id, string Login, string Nome, bool EhAdministrador, bool Habilitado, List<string> ModulosLiberados, byte[] SenhaHash, byte[] SenhaSal);
 
-public sealed record FaturamentoDto(decimal ValorBaseMensal, decimal ValorPorUsuarioExtra, int LimiteDeUsuariosNoPlano);
+/// <summary>
+/// <c>LicencaValidaAte</c> viaja aqui (não é dado de faturamento local — vem de
+/// <c>LicencaService.ObterEstado().ValidoAte</c>, outro projeto) porque este é o tipo que já
+/// sincroniza a cada ciclo periódico; criar um tipo `TipoDeItem` só pra uma data seria mais
+/// uma entidade sincronizada pra uma informação que sempre anda junto da tela de Faturamento
+/// (§24.8 — "vence em").
+/// </summary>
+public sealed record FaturamentoDto(decimal ValorBaseMensal, decimal ValorPorUsuarioExtra, int LimiteDeUsuariosNoPlano, DateOnly? LicencaValidaAte);

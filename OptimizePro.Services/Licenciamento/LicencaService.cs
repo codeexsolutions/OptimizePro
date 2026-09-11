@@ -51,16 +51,32 @@ public sealed class LicencaService
     /// todo código já emitido com a chave antiga (só troque junto com uma migração planejada).
     /// </summary>
     private const string ChavePublicaBase64 =
-        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEPkgzpFF8sWdclY7ydb2m8iUzFnHoXtiJvcrBHbRH3U/+i0Am98uYSRoVMPcnZP4nOs69mkvLrQB9zX1fV1THXA==";
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAETrxcDdtwvLj6XvtHkBkw1kc/gE9OGe17qk6P9cqG0GLlqpUR3f9kc2meEzDM8pwfbgzc1B1eINGcWRwCA9jcvQ==";
 
     /// <summary>Só pra <see cref="ProtectedData"/> (DPAPI) amarrar o arquivo ao USUÁRIO do Windows que ativou — outro usuário da mesma máquina não lê o estado salvo, mas isso é só uma camada a mais, não a defesa principal (essa é a assinatura).</summary>
     private static readonly byte[] Entropia = "OptimizePro.Licenciamento.v1"u8.ToArray();
 
     private readonly string _arquivoDeEstado;
+    private readonly string _chavePublicaBase64;
 
-    public LicencaService(CaminhosDoApp caminhos) : this(caminhos.ArquivoDeLicenca) { }
+    public LicencaService(CaminhosDoApp caminhos) : this(caminhos.ArquivoDeLicenca, ChavePublicaBase64) { }
 
-    internal LicencaService(string arquivoDeEstado) => _arquivoDeEstado = arquivoDeEstado;
+    internal LicencaService(string arquivoDeEstado) : this(arquivoDeEstado, ChavePublicaBase64) { }
+
+    /// <summary>
+    /// Só pra teste: injeta uma chave pública DIFERENTE da de produção. Sem isto, o teste que
+    /// gera um código pra <see cref="Ativar"/> aceitar precisaria assinar com a mesma chave
+    /// privada embutida aqui — ou seja, a chave de produção teria que morar num arquivo de
+    /// teste versionado no repositório, o que anularia o sentido de trocá-la por uma não
+    /// exposta. Com isto, o par de teste é descartável e nunca precisa ser o mesmo da produção.
+    /// </summary>
+    internal LicencaService(string arquivoDeEstado, string chavePublicaBase64)
+    {
+        _arquivoDeEstado = arquivoDeEstado;
+        _chavePublicaBase64 = chavePublicaBase64;
+    }
+
+    internal LicencaService(CaminhosDoApp caminhos, string chavePublicaBase64) : this(caminhos.ArquivoDeLicenca, chavePublicaBase64) { }
 
     private sealed record EstadoPersistido(string Codigo, DateOnly MaiorDataJaVista);
 
@@ -111,10 +127,10 @@ public sealed class LicencaService
         return new ResultadoDaAtivacao(true, $"Licença ativada — válida até {info.ValidoAte:dd/MM/yyyy}.", new EstadoDaLicenca(situacao, info.ValidoAte, info.Tipo, info.ClienteIdHash));
     }
 
-    private static ECDsa ObterChavePublica()
+    private ECDsa ObterChavePublica()
     {
         var chave = ECDsa.Create();
-        chave.ImportSubjectPublicKeyInfo(Convert.FromBase64String(ChavePublicaBase64), out _);
+        chave.ImportSubjectPublicKeyInfo(Convert.FromBase64String(_chavePublicaBase64), out _);
         return chave;
     }
 

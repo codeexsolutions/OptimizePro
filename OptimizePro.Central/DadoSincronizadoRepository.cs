@@ -43,4 +43,44 @@ public sealed class DadoSincronizadoRepository(CentralDbContext db) : IDadoSincr
         await db.DadosSincronizados.AsNoTracking()
             .Where(d => d.InstalacaoId == instalacaoId && d.Tipo == tipo)
             .ToListAsync(ct);
+
+    public async Task<DadoSincronizado?> ObterAsync(string instalacaoId, string tipo, string entidadeId, CancellationToken ct = default) =>
+        await db.DadosSincronizados.AsNoTracking()
+            .FirstOrDefaultAsync(d => d.InstalacaoId == instalacaoId && d.Tipo == tipo && d.EntidadeId == entidadeId, ct);
+
+    public async Task SalvarAsync(string instalacaoId, ItemSincronizado item, CancellationToken ct = default)
+    {
+        var existente = await db.DadosSincronizados
+            .FirstOrDefaultAsync(d => d.InstalacaoId == instalacaoId && d.Tipo == item.Tipo && d.EntidadeId == item.EntidadeId, ct);
+
+        if (existente is not null)
+        {
+            existente.DadosJson = item.DadosJson;
+            existente.AtualizadoEm = item.AtualizadoEm;
+        }
+        else
+        {
+            db.DadosSincronizados.Add(new DadoSincronizado
+            {
+                InstalacaoId = instalacaoId,
+                Tipo = item.Tipo,
+                EntidadeId = item.EntidadeId,
+                DadosJson = item.DadosJson,
+                AtualizadoEm = item.AtualizadoEm,
+            });
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<bool> ExcluirAsync(string instalacaoId, string tipo, string entidadeId, CancellationToken ct = default)
+    {
+        var existente = await db.DadosSincronizados
+            .FirstOrDefaultAsync(d => d.InstalacaoId == instalacaoId && d.Tipo == tipo && d.EntidadeId == entidadeId, ct);
+        if (existente is null) return false;
+
+        db.DadosSincronizados.Remove(existente);
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
 }

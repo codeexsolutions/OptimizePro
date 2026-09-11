@@ -23,6 +23,9 @@ public interface IClienteCentralHttp
     bool Configurado { get; }
     Task<RespostaDeProvisionamento?> ProvisionarAsync(uint clienteIdHash, string? nomeDaFabrica, CancellationToken ct = default);
     Task<bool> EnviarLoteAsync(string instalacaoId, string chaveDeApi, IReadOnlyList<ItemParaSincronizar> itens, CancellationToken ct = default);
+
+    /// <summary>Puxa o estado atual de Usuario da Central (§25 — login/módulos no desktop). Null = falhou (offline, Central fora do ar); quem chama mantém o cache local antigo nesse caso.</summary>
+    Task<List<UsuarioDto>?> ObterUsuariosAsync(string instalacaoId, string chaveDeApi, CancellationToken ct = default);
 }
 
 /// <summary>Fala HTTP com a Central (§24.2) — todo mundo aqui é best-effort: sem internet ou com a Central fora do ar, devolve null/false em vez de lançar, porque sincronização nunca pode travar o app desktop.</summary>
@@ -74,6 +77,27 @@ public sealed class ClienteCentralHttp : IClienteCentralHttp, IDisposable
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             return false;
+        }
+    }
+
+    public async Task<List<UsuarioDto>?> ObterUsuariosAsync(string instalacaoId, string chaveDeApi, CancellationToken ct = default)
+    {
+        if (_http is null) return null;
+
+        try
+        {
+            using var requisicao = new HttpRequestMessage(HttpMethod.Get, "/api/sync/usuarios");
+            requisicao.Headers.Add("X-Instalacao-Id", instalacaoId);
+            requisicao.Headers.Add("X-Chave-Api", chaveDeApi);
+
+            var resposta = await _http.SendAsync(requisicao, ct);
+            if (!resposta.IsSuccessStatusCode) return null;
+
+            return await resposta.Content.ReadFromJsonAsync<List<UsuarioDto>>(ct);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            return null;
         }
     }
 

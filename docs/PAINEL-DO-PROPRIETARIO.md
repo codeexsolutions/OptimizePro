@@ -39,9 +39,13 @@ levado a tornar o app cliente-servidor ("várias pessoas vendo o painel ao mesmo
    o frontend.
 4. **Sincronizador dentro do app desktop** ✅ concluído (10/09/2026) — ver §24.3 abaixo.
 5. **Scaffold do frontend em React + tela de login** ✅ concluído (10/09/2026) — ver §24.4/§24.5 abaixo.
-6. Telas de dashboard (os seis domínios, versão só-leitura pro proprietário).
-7. Tela de cadastro/gestão de usuários.
-8. Tela de faturamento.
+6. **Telas de dashboard** ✅ concluído (10/09/2026) — ver §24.6 abaixo.
+7. **Tela de cadastro/gestão de usuários** ✅ concluído (10/09/2026) — ver §24.7 abaixo. Essa
+   fase mudou quem escreve `Usuario`: passou a ser a Central (não mais o desktop) — ver §24.7
+   pra entender por quê.
+8. **Tela de faturamento** ✅ concluído (10/09/2026) — ver §24.8 abaixo.
+
+Todas as 8 fases do painel do proprietário concluídas.
 
 ## §24 — Central de sincronização
 
@@ -317,3 +321,232 @@ outra origem (a Central só serve API, sem cookie de sessão — não há CSRF a
   preencheu o formulário com uma instalação/usuário sincronizados de verdade, clicou Entrar —
   logou, mostrou os módulos certos, e um F5 depois manteve a sessão (confirma o fluxo de
   `/api/auth/me` na inicialização, não só o login em si).
+
+### 24.6 Passo concluído (10/09/2026) — telas de dashboard
+
+- `DashboardService` (Central) — lê só o espelho JSON já sincronizado (`DadoSincronizado`),
+  nunca fala com o PC da fábrica. Pra Máquinas/Histórico/Pedidos/Ordens de Serviço, é
+  desserializar as linhas do tipo certo; **Impressoras** e **Reposição** são derivados:
+  - **Impressoras**: junta Máquinas com o Histórico de hoje (trabalhos e metragem por
+    máquina, último trabalho) — sem status ao vivo (isso nunca foi sincronizado, decisão do
+    §24.2: só dado periódico, não túnel em tempo real).
+  - **Reposição**: mesmo porte de `OptimizePro.Services.Impressoras.Historico.ReposicaoService`
+    (semana de segunda a domingo, reconhece "reposição" no nome sem acento/caixa) —
+    duplicado de propósito na Central, mas com a mesma lógica exata.
+- 6 endpoints `GET /api/dashboard/{maquinas,impressoras,historico,reposicao,pedidos,
+  ordens-servico}`, cada um exigindo o módulo correspondente no token (`RequireAuthorization`
+  + checagem do claim `modulo_liberado`) — **não** é "administrador vê tudo": módulo
+  operacional é concedido por si só, independente de `EhAdministrador` (que só dá acesso a
+  Usuários/Faturamento). Testado que um usuário sem "Maquinas" liberado toma 403 no endpoint
+  de máquinas mesmo sendo administrador.
+- 6 testes novos de `DashboardService` (desserialização, linha corrompida não derruba as
+  outras, agrupamento de Reposição, derivação de Impressoras, isolamento entre instalações
+  diferentes). 560 testes passando no total do repositório.
+- **React**: `src/api/dashboard.ts` (tipos TS confirmados contra o JSON real da Central —
+  minimal API usa camelCase por padrão, diferente do PascalCase salvo dentro do blob JSON no
+  Postgres), `src/hooks/useDados.ts` (o mesmo padrão carregando/erro/dados repetido nas 6
+  telas, só isso), `src/layout/Layout.tsx` (barra lateral construída a partir de
+  `modulosLiberados` da sessão — cada pessoa só vê o que tem liberado), e as 6 páginas em
+  `src/pages/dashboard/`. `App.tsx` manda pra primeira rota liberada da pessoa (não trava
+  todo mundo em "/maquinas" se o módulo dela for outro).
+- **Testado ponta a ponta com dados reais no Supabase**: sincronizou máquina, histórico,
+  pedido (com itens) e ordem de serviço (com "Confecção Sol", acento incluso) de verdade,
+  logou no painel com todos os 6 módulos liberados, confirmou visualmente as telas
+  Impressoras (cartão com trabalhos/metragem/último trabalho corretos) e Ordens de Serviço
+  (tabela com os dados certos, acentuação preservada ponta a ponta) — provando que o pipeline
+  inteiro funciona: app desktop → Central (Postgres) → React, sem atalho nenhum no meio.
+
+### 24.7 Passo concluído (10/09/2026) — gestão de usuários (a Central vira fonte de verdade de Usuario)
+
+> Pedido do usuário: "será possível no painel alterar o mostrar ou não o módulo que o usuário
+> verá na instalação dele" — cadastro E edição de módulos liberados, direto no painel remoto.
+
+**Decisão de arquitetura que essa fase forçou**: até aqui, `Usuario` era sincronizado só numa
+direção (desktop → Central, dentro do lote periódico do §24.2). Se o painel remoto (React)
+também pudesse editar módulos, o próximo ciclo de sincronização do desktop simplesmente
+sobrescreveria a edição de volta ao estado antigo — o desktop nunca soube que algo mudou do
+lado de fora. Resolvido assim: **a partir desta fase, `TipoDeDadoSincronizado.Usuario` é escrito
+só pela Central** (direto, via `/api/usuarios`), e o app desktop **parou de empurrar Usuario**
+no lote (`SincronizacaoService.ColetarUsuariosAsync` removido). Isso foi possível sem precisar
+de sincronização reversa porque o app desktop nunca teve tela própria de cadastro de usuário —
+a tabela local (`OptimizePro.Painel.Usuarios`) nunca teve dado real de produção, só usuários de
+teste manuais durante o desenvolvimento. As outras 5 entidades (máquina/histórico/pedido/
+OS/faturamento) continuam de leitura exclusiva aqui, escritas só pelo desktop — não mudou nada
+nelas.
+
+- `OptimizePro.Central.HashDeSenha` — renomeado de `VerificacaoDeSenha` e ganhou `Gerar()`
+  (mesmo PBKDF2-HMACSHA256/210k iterações de `OptimizePro.Painel.HashDeSenha`): antes a Central
+  só verificava senha gerada pelo desktop, agora também gera senha nova.
+- `IDadoSincronizadoRepository` ganhou `ObterAsync`/`SalvarAsync`(item único)/`ExcluirAsync` —
+  o repositório genérico de sincronização (§24.2) agora também serve de armazenamento de
+  escrita direta da Central, não só de upsert em lote vindo do desktop.
+- `UsuarioAdminService` — cadastra (`CadastrarAsync`), edita nome/módulos/administrador
+  (`AtualizarAsync`), redefine senha (`RedefinirSenhaAsync`), ativa/desativa
+  (`AtualizarHabilitadoAsync`) e exclui (`ExcluirAsync`) usuários, tudo em cima de
+  `DadoSincronizado(Tipo="usuario")`. **Sem limite de 7 bloqueando o cadastro** — o plano
+  padrão de 7 usuários é uma regra de cobrança (Faturamento, fase 8), não uma trava de
+  cadastro: o dono pode ter mais de 7, só paga mais por isso.
+- **Problema do "ovo e a galinha" resolvido com bootstrap de abertura única**: como só
+  administrador pode chamar `/api/usuarios` (exige JWT), e só existe JWT depois de logar, e só
+  dá pra logar se já existir um usuário — nada conseguiria criar o primeiro usuário de uma
+  instalação nova. `POST /api/usuarios/bootstrap` (Código da instalação + login/nome/senha, sem
+  token) resolve isso: só funciona enquanto a instalação tiver zero usuários; cria o primeiro
+  como administrador com todos os 6 módulos liberados; depois disso fecha pra sempre
+  (`JaTemUsuarioException`, HTTP 409) — não é uma porta permanente, é só a única forma possível
+  de sair do zero.
+- Endpoints (`RequireAuthorization` + checagem de `eh_administrador`, nunca módulo — gestão de
+  usuário não é módulo operacional): `GET/POST /api/usuarios`, `PUT /api/usuarios/{id}`,
+  `POST /api/usuarios/{id}/redefinir-senha`, `PUT /api/usuarios/{id}/habilitado`,
+  `DELETE /api/usuarios/{id}`. Guardas de autoproteção: ninguém consegue tirar o próprio
+  "administrador", se autodesativar ou se autoexcluir (evita trancar a única conta admin pra
+  fora do próprio painel de usuários).
+- `IDadoSincronizadoRepository`/`RepositorioDeDadoSincronizadoFalso` (fake de teste) e 8 testes
+  novos de `UsuarioAdminService` (cadastro com hash, login duplicado, mesmo login em
+  instalações diferentes não conflita, edição de módulos, redefinição de senha, ativar/
+  desativar, excluir, bootstrap e o fechamento do bootstrap). 37 testes no projeto de testes da
+  Central (era 27).
+- `OptimizePro.Sincronizacao`: `ColetarUsuariosAsync` removida, teste de integração ajustado
+  pra confirmar que "usuario" **não** aparece mais no lote enviado (só
+  maquina/registro_impressao/pedido/ordem_servico/faturamento). 9 testes continuam passando.
+- **React**: `src/api/usuarios.ts` (cliente CRUD completo), `src/pages/admin/Usuarios.tsx` —
+  formulário de cadastro com checkboxes de módulo, lista com edição inline (nome, módulos via
+  checkbox, redefinir senha opcional, administrador), ativar/desativar e excluir com
+  confirmação; rota `/usuarios` protegida por `RotaDeAdministrador` (além do 403 que a própria
+  Central já devolve pra quem não é administrador).
+- **Testado ponta a ponta com dados reais no Supabase** (via curl, não houve automação de
+  browser disponível neste ambiente pra clicar na UI): provisionou instalação nova, bootstrap
+  do primeiro admin, confirmou que bootstrap fecha (409 na segunda tentativa), login, criou um
+  operador com 1 módulo liberado, **editou os módulos liberados dele pra outro conjunto**
+  (o pedido central desta fase) e confirmou a mudança na listagem, desativou, confirmou que
+  login de usuário desativado falha, testou as 3 guardas de autoproteção (não desativa/exclui/
+  rebaixa a própria conta), e excluiu. `npm run build` (tsc + vite) do React passou limpo.
+
+### 24.8 Passo concluído (10/09/2026) — tela de faturamento (última fase)
+
+Mensalidade devida ao Optimize + "vence em" da licença, na mesma tela — pedido original do
+usuário na primeira mensagem desta iniciativa.
+
+- **"Vence em" nunca tinha sido sincronizado pra Central** (decisão consciente das fases
+  anteriores — a Central só falava de dado operacional/usuário). Resolvido sem criar uma nova
+  entidade sincronizada: `FaturamentoDto` (Sincronizacao) ganhou o campo opcional
+  `LicencaValidaAte`, preenchido em `SincronizacaoService.ColetarFaturamentoAsync` a partir de
+  `LicencaService.ObterEstado().ValidoAte` (já existia, só não viajava). Viaja junto do
+  faturamento porque as duas informações sempre aparecem juntas nesta tela — criar
+  `TipoDeDadoSincronizado` só pra uma data seria mais uma entidade pra sincronizar sem
+  necessidade real.
+- `OptimizePro.Central.FaturamentoSincronizadoDto` — mesma forma, espelhada (isolamento §23/§24).
+- `FaturamentoService` (Central) — lê a linha `DadoSincronizado(Tipo="faturamento", EntidadeId="1")`
+  da instalação e calcula a mensalidade (mesma fórmula de `OptimizePro.Painel.FaturamentoService`,
+  duplicada de propósito): `valorBase + max(0, habilitados - limite) × valorPorUsuarioExtra`.
+  **Contagem de usuários habilitados vem de `IUsuarioAdminService`, não do que foi sincronizado
+  por último** — desde a §24.7 a Central é quem manda em `Usuario`, então contar por ali reflete
+  edições feitas no painel remoto depois do último ciclo de sync do desktop, não um número
+  potencialmente desatualizado.
+- `GET /api/faturamento` — administrador apenas (mesma regra de `/api/usuarios`: não é módulo
+  operacional). Devolve 404 (não erro) quando a instalação ainda não sincronizou nenhum lote
+  com faturamento — acontece logo depois de ativar a licença, antes do primeiro ciclo do
+  sincronizador; a tela trata isso como "ainda sem dados", não como falha.
+- 5 testes novos de `FaturamentoService` (sem dados ainda, dentro do limite, acima do limite
+  cobrando por usuário extra, usuário desativado não conta na mensalidade, isolamento entre
+  instalações). 42 testes no projeto de testes da Central (era 37).
+- **React**: `src/format.ts` ganhou `reais()` (formatação de moeda BRL); `src/api/faturamento.ts`;
+  `src/pages/admin/Faturamento.tsx` — dois cartões (mensalidade com o detalhamento de
+  usuários extra quando houver, e a validade da licença com selo "Em dia"/"Vence em breve"/
+  "Vencida"); rota `/faturamento` protegida por `RotaDeAdministrador` (o link na barra lateral
+  já existia desde a §24.6).
+- **Testado ponta a ponta com dados reais no Supabase** (via curl — sem automação de browser
+  disponível neste ambiente): confirmou 404 antes de qualquer sincronização; simulou o lote
+  periódico do desktop via `POST /api/sync/lote` com faturamento + validade de licença; conferiu
+  a mensalidade com só o dono habilitado (dentro do limite, sem cobrança extra); criou 8
+  usuários extras (9 habilitados no total, limite 7) e confirmou `usuariosExtras=2`,
+  `mensalidadeTotal=350` (300 + 2×25) — a fórmula bate exatamente; limpou os usuários de teste
+  depois. `npm run build` (tsc + vite) do React passou limpo. Suíte completa do backend:
+  238 testes passando (Central 42, Data 28, Painel 25, Services 139, Sincronizacao 9)
+  fora os projetos que este trabalho não tocou.
+
+## Fechamento
+
+As 8 fases planejadas do painel do proprietário estão concluídas: cadastro/autenticação de
+usuários com módulos por pessoa (editáveis a qualquer momento pelo painel remoto), acesso de
+fora da rede da fábrica via sincronização periódica pra uma Central hospedada (Postgres/
+Supabase), dashboard dos 6 domínios operacionais, e faturamento com validade de licença. Gaps
+conscientemente aceitos ao longo do caminho (documentados nas seções correspondentes): sem
+bytes de imagem de OS sincronizados, sem sincronização incremental/delta, `ClienteIdHash` de
+32 bits como limite de escala conhecido, chave de licenciamento demo ainda não rotacionada
+(ver memória [[licenciamento_chave_demo_pendente]]). Nenhum desses bloqueia uso real — são
+decisões de escopo pra revisitar quando (e se) a base de clientes justificar o esforço.
+
+## §25 — Login e gate de módulo no app desktop (extensão pós-fechamento, 10/09/2026)
+
+> Pedido do usuário: se o painel remoto restringe módulo por usuário, o app desktop (Optimize.App)
+> deveria respeitar a mesma restrição — evita que um funcionário com pouca permissão no painel
+> use o produto completo só porque está fisicamente no PC da fábrica.
+
+**Isso reabre, na direção oposta, a tensão resolvida na §24.7.** Desde lá, a Central é a única
+fonte de verdade de `Usuario` (o desktop parou de empurrar isso pra cima). Pra o desktop também
+respeitar módulo por usuário, ele precisa de volta um cache local de `Usuario` — mas como
+precisa funcionar **offline** (ninguém pode ficar sem abrir o produto por falta de internet),
+não dá pra validar login contra a Central a cada vez. Resolvido com uma sincronização na
+direção contrária da §24.2: **Central → desktop**, best-effort, no mesmo ciclo periódico.
+
+- `GET /api/sync/usuarios` (Central) — mesma autenticação por chave de API de `/api/sync/lote`
+  (instalação-pra-instalação, não é o login humano de `/api/auth/login`). Devolve a lista crua
+  de usuários da instalação, **com hash+sal de senha inclusos** — o desktop precisa validar
+  senha sozinho, sem rede.
+- `IClienteCentralHttp.ObterUsuariosAsync` (Sincronizacao) — GET com os mesmos headers de
+  `EnviarLoteAsync`; null em qualquer falha (offline, Central fora do ar), fail-open como todo
+  o resto desta camada.
+- `SincronizacaoService.PuxarUsuariosAsync` — chamado a cada ciclo de `SincronizarAsync`,
+  depois do push das outras 5 entidades. Espelho completo (apaga tudo + recria), não upsert
+  incremental — a tabela é pequena e a Central sempre manda o estado inteiro; duas
+  `SaveChangesAsync` separadas (delete, depois insert) evita depender de ordem de execução do
+  EF quando delete/insert reusam o mesmo Id. Falha no pull não deve derrubar o retorno do push
+  (são passos independentes) e **nunca apaga o cache antigo em caso de erro** — só substitui
+  quando a Central responde de verdade. Módulo com nome desconhecido no cache (versão do
+  desktop desatualizada, por exemplo) é ignorado, não derruba a linha inteira.
+- **Gate reaproveita infraestrutura já existente e nunca usada**: `OptimizePro.Painel.Usuario`/
+  `IUsuarioRepository`/`IAutenticacaoService` (§23.1) foram construídos na fase 1 do painel mas
+  nunca tiveram UI no desktop — agora servem exatamente pro propósito original, só que a tabela
+  que eles leem virou espelho da Central em vez de fonte própria.
+- `Optimize.App.Services.SessaoDoPainel` — singleton simples (`Usuario? UsuarioAtual`) guardando
+  quem logou nesta sessão do processo.
+- `LoginDoPainelViewModel`/`LoginDoPainelWindow` — mesma UI/padrão de `LicencaViewModel`/
+  `LicencaWindow` (fecha sozinha ao autenticar; `App.axaml.cs` decide o que abrir a seguir).
+- **Gate condicional, não obrigatório**: `App.axaml.cs` só mostra a tela de login se
+  `PainelDbContext.Usuarios` tiver pelo menos 1 linha localmente. Instalação nova, que nunca
+  configurou usuário nenhum no painel remoto (ou nunca sincronizou ainda), continua abrindo
+  direto — não trava quem não usa esse recurso. Uma vez que o dono cadastra usuários no painel
+  e o desktop sincroniza pelo menos uma vez (ciclo de 10 min), o gate liga sozinho na próxima
+  abertura do app.
+- `MainWindowViewModel.PodeVer{Impressoras,Maquinas,Historico,Reposicao,Pedidos,
+  OrdensDeServico}` — mesmos 6 módulos do painel remoto (`ModuloDoPainel`), únicos que entram
+  no gate. **Moldes/Projetos/Encaixe/Vetor/Disparo/Configurações nunca são módulo** — são o
+  produto original do Optimize, fora do escopo do painel do proprietário, sempre visíveis
+  independente de quem logou. `UsuarioAtual == null` (gate desligado) também mostra tudo —
+  mesmo comportamento de sempre, backward-compatible.
+- Defesa em profundidade: a checagem de módulo não fica só no `IsVisible` do menu (fácil de
+  esquecer um ponto de entrada) — `NavegarPara`, `NavegarParaTipo` e o handler de
+  `INavegador.Navegado` (os três jeitos de trocar de tela) todos passam por
+  `PodeNavegarPara(tipo)` antes de trocar `TelaAtual`.
+- 2 testes novos em `OptimizePro.Sincronizacao.Tests` (`Sincronizar_PuxaUsuariosDaCentral_
+  AtualizaCacheLocal`, incluindo módulo desconhecido sendo ignorado sem derrubar a linha;
+  `Sincronizar_CentralIndisponivelNoPull_MantemCacheLocalAntigo`). 11 testes no projeto (era 9).
+  Sem projeto de testes pro `Optimize.App` ainda — a lógica de gate em si (`PodeVer*`,
+  `PodeNavegarPara`) não tem teste automatizado dedicado, só build limpo + a mesma cobertura
+  indireta de `AutenticacaoService`/`HashDeSenha` que já existe em `OptimizePro.Painel.Tests`.
+- **Testado ponta a ponta com o app desktop de verdade**: gerada uma licença real (chave demo),
+  ativada no Optimize.App, sincronizador provisionou uma instalação nova na Central (Supabase),
+  bootstrap do admin + cadastro de um usuário `restrito` (só Histórico e Pedidos liberados) via
+  `/api/usuarios`. Reaberto o app: a tela de login apareceu (gate ligou sozinho assim que o
+  cache local ganhou usuários) e, logado como `restrito`, o menu lateral escondeu Impressoras/
+  Máquinas/Reposição/Ordens de Serviço, mantendo só Histórico/Pedidos — e manteve
+  Moldes/Projetos/Encaixe/Vetor/Disparo/Configurações sempre visíveis, confirmando visualmente
+  (screenshot) que o gate funciona fim a fim: licença → sincronização reversa → cache local →
+  login offline → menu filtrado. Suíte completa do backend: 577 testes passando.
+  **Gap real encontrado durante o teste** (não é bug de código, é o limite já documentado na
+  §24.1): reprovisionar uma instalação já existente via `/api/instalacoes/provisionar` sem ter
+  guardado a chave de API da primeira vez devolve `chaveDeApi: null` e não há como recuperar —
+  aconteceu comigo mesmo ao inspecionar via curl antes do app ter chance de salvar a própria
+  chave. Contornado manualmente nesta sessão de teste (escrevendo o estado local direto);
+  o único jeito real de evitar isso em produção é o app sempre ser o primeiro a provisionar,
+  sem inspeção manual no meio.

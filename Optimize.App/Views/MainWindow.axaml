@@ -91,7 +91,7 @@
                     </StackPanel>
                 </ui:NavigationViewItem.Content>
             </ui:NavigationViewItem>
-            <ui:NavigationViewItem Tag="Impressoras" AutomationProperties.Name="Impressoras">
+            <ui:NavigationViewItem Tag="Impressoras" AutomationProperties.Name="Impressoras" IsVisible="{Binding PodeVerImpressoras}">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="Print" />
                 </ui:NavigationViewItem.IconSource>
@@ -102,7 +102,7 @@
                     </StackPanel>
                 </ui:NavigationViewItem.Content>
             </ui:NavigationViewItem>
-            <ui:NavigationViewItem Tag="Maquinas" AutomationProperties.Name="Máquinas">
+            <ui:NavigationViewItem Tag="Maquinas" AutomationProperties.Name="Máquinas" IsVisible="{Binding PodeVerMaquinas}">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="Print" />
                 </ui:NavigationViewItem.IconSource>
@@ -113,7 +113,7 @@
                     </StackPanel>
                 </ui:NavigationViewItem.Content>
             </ui:NavigationViewItem>
-            <ui:NavigationViewItem Tag="Historico" AutomationProperties.Name="Histórico">
+            <ui:NavigationViewItem Tag="Historico" AutomationProperties.Name="Histórico" IsVisible="{Binding PodeVerHistorico}">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="Document" />
                 </ui:NavigationViewItem.IconSource>
@@ -124,7 +124,7 @@
                     </StackPanel>
                 </ui:NavigationViewItem.Content>
             </ui:NavigationViewItem>
-            <ui:NavigationViewItem Tag="Reposicao" AutomationProperties.Name="Reposição">
+            <ui:NavigationViewItem Tag="Reposicao" AutomationProperties.Name="Reposição" IsVisible="{Binding PodeVerReposicao}">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="Refresh" />
                 </ui:NavigationViewItem.IconSource>
@@ -135,7 +135,7 @@
                     </StackPanel>
                 </ui:NavigationViewItem.Content>
             </ui:NavigationViewItem>
-            <ui:NavigationViewItem Tag="Pedidos" AutomationProperties.Name="Pedidos">
+            <ui:NavigationViewItem Tag="Pedidos" AutomationProperties.Name="Pedidos" IsVisible="{Binding PodeVerPedidos}">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="List" />
                 </ui:NavigationViewItem.IconSource>
@@ -146,7 +146,7 @@
                     </StackPanel>
                 </ui:NavigationViewItem.Content>
             </ui:NavigationViewItem>
-            <ui:NavigationViewItem Tag="OrdensDeServico" AutomationProperties.Name="Ordens de Serviço">
+            <ui:NavigationViewItem Tag="OrdensDeServico" AutomationProperties.Name="Ordens de Serviço" IsVisible="{Binding PodeVerOrdensDeServico}">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="Document" />
                 </ui:NavigationViewItem.IconSource>
@@ -182,7 +182,17 @@
         </ui:NavigationView.MenuItems>
 
         <ui:NavigationView.PaneFooter>
-            <StackPanel Margin="16,0,16,16" Spacing="2">
+            <StackPanel Margin="16,0,16,16" Spacing="8">
+                <!-- Gate de módulos (§25) — só aparece pra quem realmente logou; sem sessão de
+                     painel (instalação que nunca configurou usuário), não tem "sair" nem sentido. -->
+                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding PodeSair}">
+                    <Button Grid.Column="0" Content="Sincronizar" Command="{Binding SincronizarCommand}" IsEnabled="{Binding !Sincronizando}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Margin="0,0,8,0" Padding="0,7" CornerRadius="6" FontSize="12" />
+                    <Button Grid.Column="1" Content="Sair" Command="{Binding SairCommand}"
+                            Padding="12,7" CornerRadius="6" FontSize="12" />
+                </Grid>
+
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <Ellipse Width="8" Height="8" Fill="{DynamicResource PincelAmbar}" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding StatusWhatsApp, StringFormat='WhatsApp: {0}'}"

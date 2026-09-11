@@ -33,7 +33,7 @@ public sealed class AutenticacaoDeUsuarioService(IInstalacaoRepository instalaco
             if (candidato is not null && candidato.Login == login) { encontrado = candidato; break; }
         }
 
-        if (encontrado is null || !VerificacaoDeSenha.Conferir(senha, encontrado.SenhaHash, encontrado.SenhaSal))
+        if (encontrado is null || !HashDeSenha.Conferir(senha, encontrado.SenhaHash, encontrado.SenhaSal))
             return new ResultadoDoLoginRemoto(false, null, erroGenerico);
 
         if (!encontrado.Habilitado)

@@ -38,12 +38,18 @@ public sealed class SincronizacaoService(
         itens.AddRange(await ColetarHistoricoAsync(ct));
         itens.AddRange(await ColetarPedidosAsync(ct));
         itens.AddRange(await ColetarOrdensDeServicoAsync(ct));
-        itens.AddRange(await ColetarUsuariosAsync(ct));
         itens.AddRange(await ColetarFaturamentoAsync(ct));
 
-        if (itens.Count == 0) return true;
+        var envioOk = itens.Count == 0 || await cliente.EnviarLoteAsync(estado.InstalacaoId, estado.ChaveDeApi, itens, ct);
 
-        return await cliente.EnviarLoteAsync(estado.InstalacaoId, estado.ChaveDeApi, itens, ct);
+        // Pull de Usuario, na direção oposta do resto (§25) — desde a §24.7 a Central manda em
+        // Usuario, então o app desktop puxa o estado atual pra um cache local (mesma tabela
+        // Usuarios do §23.1, agora só espelho) e usa isso pra logar gente OFFLINE no chão de
+        // fábrica, sem depender de rede na hora do login. Falha aqui não deve derrubar o
+        // retorno geral do ciclo — é um passo independente, best-effort à parte.
+        await PuxarUsuariosAsync(estado, ct);
+
+        return envioOk;
     }
 
     private async Task<EstadoLocalDeSincronizacao?> GarantirProvisionadoAsync(CancellationToken ct)
@@ -114,30 +120,59 @@ public sealed class SincronizacaoService(
         return ordens.Select(o => Empacotar(TipoDeItem.OrdemDeServico, o.Id, o)).ToList();
     }
 
-    private async Task<List<ItemParaSincronizar>> ColetarUsuariosAsync(CancellationToken ct)
-    {
-        // Materializa as entidades primeiro (a tabela é pequena — no máximo umas dezenas de
-        // linhas) porque ModulosLiberados é uma coluna JSON convertida, não uma coleção
-        // relacional de verdade: EF Core não traduz ".Select(m => m.ToString())" em cima dela
-        // pro SQL, só dá pra mapear pro DTO depois de já ter os objetos em memória.
-        var usuarios = await painelDb.Usuarios.AsNoTracking().ToListAsync(ct);
-
-        return usuarios
-            .Select(u => new UsuarioDto(
-                u.Id, u.Login, u.Nome, u.EhAdministrador, u.Habilitado,
-                u.ModulosLiberados.Select(m => m.ToString()).ToList(), u.SenhaHash, u.SenhaSal))
-            .Select(u => Empacotar(TipoDeItem.Usuario, u.Id, u))
-            .ToList();
-    }
-
     private async Task<List<ItemParaSincronizar>> ColetarFaturamentoAsync(CancellationToken ct)
     {
         var configuracao = await painelDb.ConfiguracoesDeFaturamento.AsNoTracking().FirstOrDefaultAsync(c => c.Id == 1, ct);
         if (configuracao is null) return [];
 
-        var dto = new FaturamentoDto(configuracao.ValorBaseMensal, configuracao.ValorPorUsuarioExtra, configuracao.LimiteDeUsuariosNoPlano);
+        var dto = new FaturamentoDto(
+            configuracao.ValorBaseMensal, configuracao.ValorPorUsuarioExtra, configuracao.LimiteDeUsuariosNoPlano,
+            licenca.ObterEstado().ValidoAte);
         return [Empacotar(TipoDeItem.Faturamento, "1", dto)];
     }
+
+    private async Task PuxarUsuariosAsync(EstadoLocalDeSincronizacao estado, CancellationToken ct)
+    {
+        var usuarios = await cliente.ObterUsuariosAsync(estado.InstalacaoId, estado.ChaveDeApi, ct);
+        if (usuarios is null) return; // offline/erro — mantém o cache local antigo como está.
+
+        // Espelho completo, não upsert incremental: a tabela é pequena (poucas dezenas de
+        // linhas no máximo) e a Central sempre manda o estado inteiro, então "apagar tudo e
+        // recriar" é mais simples e não deixa usuário excluído remotamente sobrando aqui.
+        // Duas SaveChanges separadas (delete, depois insert) evita depender da ordem de
+        // execução do EF quando delete e insert reusam o mesmo Id de linha.
+        var atuais = await painelDb.Usuarios.ToListAsync(ct);
+        if (atuais.Count > 0)
+        {
+            painelDb.Usuarios.RemoveRange(atuais);
+            await painelDb.SaveChangesAsync(ct);
+        }
+
+        if (usuarios.Count > 0)
+        {
+            painelDb.Usuarios.AddRange(usuarios.Select(ParaUsuarioLocal));
+            await painelDb.SaveChangesAsync(ct);
+        }
+    }
+
+    private static Usuario ParaUsuarioLocal(UsuarioDto dto) => new()
+    {
+        Id = dto.Id,
+        Login = dto.Login,
+        Nome = dto.Nome,
+        SenhaHash = dto.SenhaHash,
+        SenhaSal = dto.SenhaSal,
+        EhAdministrador = dto.EhAdministrador,
+        Habilitado = dto.Habilitado,
+        // Ignora valor desconhecido em vez de lançar — um módulo com nome que o desktop não
+        // reconhece (versão desatualizada, por exemplo) não deve quebrar o cache inteiro.
+        ModulosLiberados = dto.ModulosLiberados
+            .Select(m => Enum.TryParse<ModuloDoPainel>(m, out var modulo) ? modulo : (ModuloDoPainel?)null)
+            .Where(m => m is not null)
+            .Select(m => m!.Value)
+            .ToList(),
+        CriadoEm = DateTime.UtcNow,
+    };
 
     private static ItemParaSincronizar Empacotar<T>(string tipo, string entidadeId, T dados) =>
         new(tipo, entidadeId, JsonSerializer.Serialize(dados, (JsonSerializerOptions?)null), DateTime.UtcNow);

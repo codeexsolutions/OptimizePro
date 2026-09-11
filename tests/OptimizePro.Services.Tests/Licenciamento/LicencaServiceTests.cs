@@ -6,23 +6,25 @@ using OptimizePro.Services.Licenciamento;
 namespace OptimizePro.Services.Tests.Licenciamento;
 
 /// <summary>
-/// Testa o fluxo completo do <see cref="LicencaService"/> usando a MESMA chave privada cujo
-/// par público está hardcoded em <c>LicencaService.ChavePublicaBase64</c> — só assim dá pra
-/// gerar código de teste que a verificação real aceita. Esta chave é a de DEMONSTRAÇÃO gerada
-/// durante o desenvolvimento (§ "acesso controlado", 02/09/2026) — antes de vender pra
-/// cliente de verdade, gere um par NOVO (<c>GeradorDeLicenca gerar-chave</c>) e troque tanto
-/// aqui quanto em <c>LicencaService.ChavePublicaBase64</c>, senão qualquer um que veja este
-/// arquivo de teste consegue forjar licença.
+/// Testa o fluxo completo do <see cref="LicencaService"/> com um par de chaves SÓ DE TESTE,
+/// descartável, injetado via o construtor internal (<see cref="LicencaService(string, string)"/>)
+/// — nunca é a chave de produção embutida em <c>LicencaService.ChavePublicaBase64</c>. Isso é
+/// de propósito (10/09/2026, na rotação de chave real): se este teste dependesse da mesma
+/// chave da produção, a chave privada de produção teria que morar aqui, versionada no
+/// repositório — o que anularia o sentido de ela não estar exposta.
 /// </summary>
 public class LicencaServiceTests : IDisposable
 {
     private const string ChavePrivadaDeTestePem = """
         -----BEGIN EC PRIVATE KEY-----
-        MHcCAQEEIBzA3jenUi7eSc8oQyWbLmaHiYHsp9qMu+m2Cvxcb0WtoAoGCCqGSM49
-        AwEHoUQDQgAEPkgzpFF8sWdclY7ydb2m8iUzFnHoXtiJvcrBHbRH3U/+i0Am98uY
-        SRoVMPcnZP4nOs69mkvLrQB9zX1fV1THXA==
+        MHcCAQEEIOngR2Z+D6gOZw3RscrQheYXvWtZaRM/37ZinNDco/WKoAoGCCqGSM49
+        AwEHoUQDQgAEX9V8dCUAWXVK96CPQN9Vt5d1bTgXl14w1ABlPKqGlnzjUjP+dZQ8
+        0yqzVoXXxyhZYCUy6KNquRgeSCpPU7A8YA==
         -----END EC PRIVATE KEY-----
         """;
+
+    private const string ChavePublicaDeTesteBase64 =
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEX9V8dCUAWXVK96CPQN9Vt5d1bTgXl14w1ABlPKqGlnzjUjP+dZQ80yqzVoXXxyhZYCUy6KNquRgeSCpPU7A8YA==";
 
     private readonly string _arquivoTemporario = Path.Combine(Path.GetTempPath(), $"licenca-teste-{Guid.NewGuid():N}.dat");
 
@@ -38,7 +40,7 @@ public class LicencaServiceTests : IDisposable
         return CodificadorDeLicenca.Gerar(chave, validoAte, clienteIdHash: 0, tipo);
     }
 
-    private LicencaService NovoServico() => new(_arquivoTemporario);
+    private LicencaService NovoServico() => new(_arquivoTemporario, ChavePublicaDeTesteBase64);
 
     [Fact]
     public void ObterEstado_SemNuncaAtivar_DevolveNuncaAtivada()

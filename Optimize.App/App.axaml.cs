@@ -1,3 +1,4 @@
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -35,6 +36,8 @@ public partial class App : Application
     private IHost? _host;
     private IServiceScope? _escopoDaSessao;
     private ServidorDoPainel? _servidorDoPainel;
+    private IClassicDesktopStyleApplicationLifetime? _desktop;
+    private CaminhosDoApp? _caminhos;
 
     public override void Initialize()
     {
@@ -45,7 +48,9 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            _desktop = desktop;
             var caminhos = new CaminhosDoApp();
+            _caminhos = caminhos;
 
             _host = Host.CreateDefaultBuilder()
                 .ConfigureServices((_, services) =>
@@ -90,6 +95,12 @@ public partial class App : Application
                         $"Data Source={caminhos.BancoDeDados}",
                         x => x.MigrationsHistoryTable("__EFMigrationsHistory_Painel")));
 
+                    // Gate de login por módulo (§25) — a mesma tabela Usuarios acima, agora
+                    // também lida localmente pra autenticar OFFLINE quem abre o app desktop.
+                    services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+                    services.AddScoped<IAutenticacaoService, AutenticacaoService>();
+                    services.AddSingleton<SessaoDoPainel>();
+
                     // Sincronização com a Central (§24) — best-effort; sem OPTIMIZE_CENTRAL_URL
                     // configurada, ClienteCentralHttp.Configurado fica false e nada é enviado.
                     services.AddSingleton(ConfiguracaoDaCentral.DoAmbiente());
@@ -113,6 +124,7 @@ public partial class App : Application
                     services.AddScoped<INavegador, Navegador>();
 
                     services.AddTransient<MainWindowViewModel>();
+                    services.AddTransient<LoginDoPainelViewModel>();
                     services.AddTransient<MoldesViewModel>();
                     services.AddTransient<MoldeWizardViewModel>();
                     services.AddTransient<MoldeArteEnvioViewModel>();
@@ -157,8 +169,7 @@ public partial class App : Application
 
             if (estadoDaLicenca.Liberado)
             {
-                desktop.MainWindow = CriarMainWindow();
-                IniciarServidorDoPainel(caminhos);
+                EntrarNoAppPrincipal(exibirManualmente: false);
             }
             else
             {
@@ -175,10 +186,7 @@ public partial class App : Application
                         return;
                     }
 
-                    var mainWindow = CriarMainWindow();
-                    desktop.MainWindow = mainWindow;
-                    mainWindow.Show();
-                    IniciarServidorDoPainel(caminhos);
+                    EntrarNoAppPrincipal(exibirManualmente: true);
                 };
 
                 desktop.MainWindow = licencaWindow;
@@ -196,10 +204,74 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
 
-    private MainWindow CriarMainWindow() => new()
+    private MainWindow CriarMainWindow()
     {
-        DataContext = _escopoDaSessao!.ServiceProvider.GetRequiredService<MainWindowViewModel>(),
-    };
+        var viewModel = _escopoDaSessao!.ServiceProvider.GetRequiredService<MainWindowViewModel>();
+        var window = new MainWindow { DataContext = viewModel };
+
+        // Botão "Sair" (§25) — mostra a janela de login NOVA antes de fechar esta (nunca os
+        // dois zero janelas abertas ao mesmo tempo; ShutdownMode.OnLastWindowClose fecharia o
+        // app inteiro se isso acontecesse por um instante).
+        viewModel.SolicitouSaida += () =>
+        {
+            _escopoDaSessao!.ServiceProvider.GetRequiredService<SessaoDoPainel>().UsuarioAtual = null;
+            MostrarTelaDeLogin(exibirManualmente: true);
+            window.Close();
+        };
+
+        return window;
+    }
+
+    // Gate de login por módulo (§25) — só entra em cena se já existir pelo menos um usuário do
+    // painel cacheado localmente (sincronizado da Central, ver SincronizacaoService). Instalação
+    // nova, que nunca configurou usuários no painel remoto, continua abrindo direto — não trava
+    // quem não usa esse recurso. "exibirManualmente" existe porque, chamado durante o startup
+    // síncrono (licença já liberada), o Avalonia mostra "desktop.MainWindow" sozinho; chamado de
+    // dentro de um Closed/evento (depois do startup), precisa de Show() explícito.
+    private void EntrarNoAppPrincipal(bool exibirManualmente)
+    {
+        var painelDb = _escopoDaSessao!.ServiceProvider.GetRequiredService<PainelDbContext>();
+
+        if (!painelDb.Usuarios.Any())
+        {
+            AbrirMainWindow(exibirManualmente);
+            return;
+        }
+
+        MostrarTelaDeLogin(exibirManualmente);
+    }
+
+    // Reaproveitada tanto no gate inicial quanto no botão "Sair" (volta pra cá sem fechar o
+    // processo) — por isso não checa de novo "existem usuários": quem chama já sabe que sim.
+    private void MostrarTelaDeLogin(bool exibirManualmente)
+    {
+        var loginViewModel = _escopoDaSessao!.ServiceProvider.GetRequiredService<LoginDoPainelViewModel>();
+        var loginWindow = new LoginDoPainelWindow(loginViewModel);
+        loginWindow.Closed += (_, _) =>
+        {
+            if (!loginViewModel.Autenticado)
+            {
+                _desktop!.Shutdown();
+                return;
+            }
+
+            AbrirMainWindow(exibirManualmente: true);
+        };
+
+        _desktop!.MainWindow = loginWindow;
+        if (exibirManualmente) loginWindow.Show();
+    }
+
+    private void AbrirMainWindow(bool exibirManualmente)
+    {
+        var mainWindow = CriarMainWindow();
+        _desktop!.MainWindow = mainWindow;
+        if (exibirManualmente) mainWindow.Show();
+
+        // Só na primeira vez: reentrar aqui via "Sair" não deve subir um segundo servidor do
+        // painel na mesma porta por cima do que já está rodando.
+        if (_servidorDoPainel is null) IniciarServidorDoPainel(_caminhos!);
+    }
 
     // Só sobe com licença liberada (mesma trava do app inteiro) — o painel expõe dados da
     // fábrica pra rede local, então não faz sentido ligá-lo antes da ativação (§22.2).

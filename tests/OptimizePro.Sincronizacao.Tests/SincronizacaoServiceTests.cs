@@ -10,16 +10,19 @@ using OptimizePro.Services.Licenciamento;
 
 namespace OptimizePro.Sincronizacao.Tests;
 
-/// <summary>Mesma chave de demonstração usada em <c>LicencaServiceTests</c> — ver o aviso lá sobre trocar antes de vender de verdade.</summary>
+/// <summary>Mesmo par de chaves SÓ DE TESTE de <c>LicencaServiceTests</c> (descartável, nunca é a chave real de produção) — ver o comentário lá pro porquê.</summary>
 public class SincronizacaoServiceTests : IDisposable
 {
     private const string ChavePrivadaDeTestePem = """
         -----BEGIN EC PRIVATE KEY-----
-        MHcCAQEEIBzA3jenUi7eSc8oQyWbLmaHiYHsp9qMu+m2Cvxcb0WtoAoGCCqGSM49
-        AwEHoUQDQgAEPkgzpFF8sWdclY7ydb2m8iUzFnHoXtiJvcrBHbRH3U/+i0Am98uY
-        SRoVMPcnZP4nOs69mkvLrQB9zX1fV1THXA==
+        MHcCAQEEIOngR2Z+D6gOZw3RscrQheYXvWtZaRM/37ZinNDco/WKoAoGCCqGSM49
+        AwEHoUQDQgAEX9V8dCUAWXVK96CPQN9Vt5d1bTgXl14w1ABlPKqGlnzjUjP+dZQ8
+        0yqzVoXXxyhZYCUy6KNquRgeSCpPU7A8YA==
         -----END EC PRIVATE KEY-----
         """;
+
+    private const string ChavePublicaDeTesteBase64 =
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEX9V8dCUAWXVK96CPQN9Vt5d1bTgXl14w1ABlPKqGlnzjUjP+dZQ80yqzVoXXxyhZYCUy6KNquRgeSCpPU7A8YA==";
 
     private readonly string _pastaTemporaria = Path.Combine(Path.GetTempPath(), $"sincronizacao-teste-{Guid.NewGuid():N}");
 
@@ -38,7 +41,7 @@ public class SincronizacaoServiceTests : IDisposable
     private LicencaService NovaLicencaAtivada(uint clienteIdHash)
     {
         var caminhos = new CaminhosDoApp(_pastaTemporaria);
-        var licenca = new LicencaService(caminhos);
+        var licenca = new LicencaService(caminhos, ChavePublicaDeTesteBase64);
         licenca.Ativar(GerarCodigoDeLicenca(clienteIdHash)).Sucesso.Should().BeTrue();
         return licenca;
     }
@@ -51,7 +54,7 @@ public class SincronizacaoServiceTests : IDisposable
     {
         using var banco = new BancoDeTeste();
         var caminhos = new CaminhosDoApp(_pastaTemporaria);
-        var licenca = new LicencaService(caminhos); // nunca ativada
+        var licenca = new LicencaService(caminhos, ChavePublicaDeTesteBase64); // nunca ativada
         var cliente = new ClienteCentralFalso();
         var servico = new SincronizacaoService(banco.Operacional, banco.Painel, licenca, NovoArmazenamento(), cliente);
 
@@ -130,7 +133,7 @@ public class SincronizacaoServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Sincronizar_ComDadosLocais_EnviaMaquinasHistoricoPedidosOsUsuariosEFaturamento()
+    public async Task Sincronizar_ComDadosLocais_EnviaMaquinasHistoricoPedidosOsEFaturamento()
     {
         using var banco = new BancoDeTeste();
 
@@ -148,11 +151,9 @@ public class SincronizacaoServiceTests : IDisposable
         banco.Operacional.OrdensDeServico.Add(new OrdemDeServico { Id = "os1", NomeDoCliente = "Cliente A", Data = "2026-01-01" });
         await banco.Operacional.SaveChangesAsync();
 
-        banco.Painel.Usuarios.Add(new Usuario
-        {
-            Id = "u1", Login = "dono", Nome = "Dono", SenhaHash = [1, 2, 3], SenhaSal = [4, 5, 6],
-            ModulosLiberados = [ModuloDoPainel.Historico],
-        });
+        // Usuario NÃO é mais empurrado pelo desktop (§24.7): a Central passou a ser a fonte
+        // de verdade dessa entidade, escrita direto por /api/usuarios. Só Faturamento continua
+        // vindo do Painel local aqui.
         banco.Painel.ConfiguracoesDeFaturamento.Add(new ConfiguracaoDeFaturamento { ValorBaseMensal = 300m, ValorPorUsuarioExtra = 25m });
         await banco.Painel.SaveChangesAsync();
 
@@ -169,11 +170,66 @@ public class SincronizacaoServiceTests : IDisposable
         var tipos = cliente.UltimoLoteEnviado!.Select(i => i.Tipo).ToList();
         tipos.Should().Contain([
             TipoDeItem.Maquina, TipoDeItem.RegistroDeImpressao, TipoDeItem.Pedido,
-            TipoDeItem.OrdemDeServico, TipoDeItem.Usuario, TipoDeItem.Faturamento,
+            TipoDeItem.OrdemDeServico, TipoDeItem.Faturamento,
         ]);
+        tipos.Should().NotContain(TipoDeItem.Usuario);
 
         var itemDoPedido = cliente.UltimoLoteEnviado!.Single(i => i.Tipo == TipoDeItem.Pedido);
         using var pedidoJson = JsonDocument.Parse(itemDoPedido.DadosJson);
         pedidoJson.RootElement.GetProperty("Itens").GetArrayLength().Should().Be(1, "o pedido deve levar os itens junto");
+    }
+
+    [Fact]
+    public async Task Sincronizar_PuxaUsuariosDaCentral_AtualizaCacheLocal()
+    {
+        using var banco = new BancoDeTeste();
+        var licenca = NovaLicencaAtivada(666u);
+        var armazenamento = NovoArmazenamento();
+        armazenamento.Salvar(new EstadoLocalDeSincronizacao("inst-1", "chave-1"));
+        var cliente = new ClienteCentralFalso
+        {
+            ProximaListaDeUsuarios =
+            [
+                new UsuarioDto("u1", "dono", "Dono", true, true, ["Impressoras", "Historico"], [1, 2], [3, 4]),
+                new UsuarioDto("u2", "op1", "Operador", false, false, ["Pedidos", "ModuloQueNaoExisteMais"], [5, 6], [7, 8]),
+            ],
+        };
+        var servico = new SincronizacaoService(banco.Operacional, banco.Painel, licenca, armazenamento, cliente);
+
+        await servico.SincronizarAsync();
+
+        cliente.ChamadasDeObterUsuarios.Should().Be(1);
+        var usuariosLocais = banco.Painel.Usuarios.OrderBy(u => u.Login).ToList();
+        usuariosLocais.Should().HaveCount(2);
+
+        var dono = usuariosLocais.Single(u => u.Login == "dono");
+        dono.EhAdministrador.Should().BeTrue();
+        dono.ModulosLiberados.Should().BeEquivalentTo([ModuloDoPainel.Impressoras, ModuloDoPainel.Historico]);
+
+        var operador = usuariosLocais.Single(u => u.Login == "op1");
+        operador.Habilitado.Should().BeFalse();
+        operador.ModulosLiberados.Should().BeEquivalentTo([ModuloDoPainel.Pedidos], "módulo desconhecido deve ser ignorado, não derrubar o cache inteiro");
+    }
+
+    [Fact]
+    public async Task Sincronizar_CentralIndisponivelNoPull_MantemCacheLocalAntigo()
+    {
+        using var banco = new BancoDeTeste();
+        banco.Painel.Usuarios.Add(new Usuario
+        {
+            Id = "u1", Login = "dono", Nome = "Dono", SenhaHash = [1], SenhaSal = [2],
+            ModulosLiberados = [ModuloDoPainel.Historico],
+        });
+        await banco.Painel.SaveChangesAsync();
+
+        var licenca = NovaLicencaAtivada(777u);
+        var armazenamento = NovoArmazenamento();
+        armazenamento.Salvar(new EstadoLocalDeSincronizacao("inst-1", "chave-1"));
+        var cliente = new ClienteCentralFalso { ProximaListaDeUsuarios = null }; // simula falha/offline no pull
+        var servico = new SincronizacaoService(banco.Operacional, banco.Painel, licenca, armazenamento, cliente);
+
+        await servico.SincronizarAsync();
+
+        banco.Painel.Usuarios.Should().ContainSingle(u => u.Login == "dono");
     }
 }

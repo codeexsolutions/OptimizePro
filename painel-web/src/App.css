@@ -92,55 +92,355 @@ body {
   margin: 0;
 }
 
-.painel {
+/* Casca (barra lateral + conteúdo) */
+
+.casca {
+  display: flex;
   min-height: 100vh;
 }
 
-.cabecalho-do-painel {
+.barra-lateral {
+  width: 220px;
+  flex-shrink: 0;
+  background: #111113;
+  border-right: 1px solid #2a2a2e;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid #2a2a2e;
+  flex-direction: column;
+  padding: 20px 14px;
 }
 
-.cabecalho-do-painel strong {
+.marca {
+  padding: 0 8px 20px;
+}
+
+.marca strong {
   display: block;
   color: #f97316;
+  font-size: 1.05rem;
 }
 
-.usuario-logado {
+.barra-lateral nav {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
 }
 
-.usuario-logado button {
+.barra-lateral nav a {
+  color: #ccc;
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding: 9px 10px;
+  border-radius: 7px;
+}
+
+.barra-lateral nav a:hover {
+  background: #1c1c1f;
+}
+
+.barra-lateral nav a.ativo {
+  background: #2a1a0e;
+  color: #f97316;
+  font-weight: 600;
+}
+
+.separador {
+  height: 1px;
+  background: #2a2a2e;
+  margin: 10px 4px;
+}
+
+.rodape-da-barra {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 8px 0;
+  border-top: 1px solid #2a2a2e;
+  font-size: 0.82rem;
+}
+
+.rodape-da-barra button {
   background: transparent;
   border: 1px solid #333;
   border-radius: 6px;
-  padding: 6px 12px;
+  padding: 6px 10px;
   color: #ccc;
   cursor: pointer;
+  align-self: flex-start;
 }
 
-main {
-  padding: 24px;
-  max-width: 640px;
+.conteudo {
+  flex: 1;
+  padding: 28px 32px;
+  overflow-x: auto;
 }
 
-.lista-de-modulos {
-  list-style: none;
-  padding: 0;
+.pagina h1 {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+}
+
+/* Cartões */
+
+.grade-de-cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.cartao {
+  background: #17171a;
+  border: 1px solid #2a2a2e;
+  border-radius: 10px;
+  padding: 14px;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cartao-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 8px;
 }
 
-.lista-de-modulos li {
+.selo {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.selo-ok {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+}
+
+.selo-off {
+  background: rgba(153, 153, 153, 0.15);
+  color: #999;
+}
+
+.par-de-indicadores {
+  display: flex;
+  gap: 20px;
+  margin-top: 4px;
+}
+
+.par-de-indicadores div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ultimo-trabalho {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #2a2a2e;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+}
+
+/* Tabelas */
+
+.tabela-scroll {
+  overflow-x: auto;
+  margin-top: 16px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+th {
+  text-align: left;
+  color: #999;
+  font-weight: 500;
+  font-size: 0.75rem;
+  padding: 6px 10px;
+  border-bottom: 1px solid #2a2a2e;
+}
+
+td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #1c1c1f;
+}
+
+.mono {
+  font-family: ui-monospace, monospace;
+}
+
+.celula-truncada {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.texto-alerta {
+  color: #f87171;
+}
+
+/* Destaque numérico (Reposição) */
+
+.destaque {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 16px 0;
+}
+
+.destaque strong {
+  font-size: 2rem;
+  color: #f97316;
+}
+
+/* Acordeão (Reposição, Pedidos) */
+
+.lista-de-acordeao {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lista-de-acordeao > li {
   background: #17171a;
   border: 1px solid #2a2a2e;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.linha-do-acordeao {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.detalhe-do-acordeao {
+  border-top: 1px solid #2a2a2e;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.linha-do-detalhe {
+  display: grid;
+  grid-template-columns: 140px 120px 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+/* Usuários (§24.7) */
+
+.formulario-de-usuario {
+  max-width: 640px;
+  margin: 16px 0 24px;
+  gap: 12px;
+}
+
+.formulario-de-usuario h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.linha-do-formulario {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.linha-do-formulario label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: #ccc;
+  flex: 1;
+  min-width: 160px;
+}
+
+.linha-do-formulario input {
+  background: #0b0b0c;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #f5f5f5;
+  font-size: 0.88rem;
+}
+
+.linha-do-formulario input:focus {
+  outline: none;
+  border-color: #f97316;
+}
+
+.grade-de-modulos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px 12px;
+  margin: 4px 0 4px;
+}
+
+.modulo-checkbox,
+.checkbox-administrador {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #ddd;
+}
+
+.formulario-de-usuario button,
+.detalhe-do-acordeao button {
+  background: #f97316;
+  border: none;
   border-radius: 8px;
   padding: 8px 14px;
-  font-size: 0.85rem;
+  color: #1a1a1a;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.formulario-de-usuario button:disabled,
+.detalhe-do-acordeao button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.linha-do-acordeao button {
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 5px 10px;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.linha-do-acordeao button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }

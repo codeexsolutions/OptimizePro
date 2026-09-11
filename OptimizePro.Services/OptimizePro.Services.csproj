@@ -33,6 +33,10 @@
          não só indireto via EncaixeService — segurança demais em jogo (peça sobreposta =
          corte errado de verdade) pra confiar só em cobertura indireta. -->
     <InternalsVisibleTo Include="OptimizePro.Services.Tests" />
+    <!-- SincronizacaoServiceTests precisa injetar uma chave pública SÓ DE TESTE em
+         LicencaService (rotação de chave real, 10/09/2026) — ver o comentário em
+         LicencaServiceTests pro porquê de não usar a chave de produção nos testes. -->
+    <InternalsVisibleTo Include="OptimizePro.Sincronizacao.Tests" />
   </ItemGroup>
 
 </Project>
