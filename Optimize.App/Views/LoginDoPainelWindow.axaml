@@ -7,7 +7,7 @@
         x:Class="Optimize.App.Views.LoginDoPainelWindow"
         x:DataType="vm:LoginDoPainelViewModel"
         Icon="/Assets/optimize.ico"
-        Title="Optimize — Login"
+        Title="Optimize Pro — Login"
         Width="420" Height="360"
         CanResize="False"
         WindowStartupLocation="CenterScreen">

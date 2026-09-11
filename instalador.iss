@@ -2,7 +2,7 @@
 ; Compilar: ISCC.exe instalador.iss  (depois de rodar publicar.ps1)
 ; Baixar Inno Setup: https://jrsoftware.org/isdl.php
 
-#define MyAppName "Optimize"
+#define MyAppName "Optimize Pro"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Codeex Solutions"
 #define MyAppExeName "OptimizePro.App.exe"

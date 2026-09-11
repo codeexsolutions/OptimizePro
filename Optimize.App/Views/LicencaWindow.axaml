@@ -7,7 +7,7 @@
         x:Class="Optimize.App.Views.LicencaWindow"
         x:DataType="vm:LicencaViewModel"
         Icon="/Assets/optimize.ico"
-        Title="Optimize — Ativação"
+        Title="Optimize Pro — Ativação"
         Width="480" Height="380"
         CanResize="False"
         WindowStartupLocation="CenterScreen">

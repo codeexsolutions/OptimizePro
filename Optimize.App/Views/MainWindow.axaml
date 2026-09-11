@@ -8,7 +8,7 @@
         x:Class="Optimize.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/optimize.ico"
-        Title="Optimize"
+        Title="Optimize Pro"
         Background="{DynamicResource PincelFundo}"
         FontFamily="{DynamicResource FonteTexto}"
         Width="1280" Height="800"
@@ -36,7 +36,7 @@
                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <StackPanel Spacing="1" VerticalAlignment="Center">
-                    <TextBlock Text="Optimize" FontSize="16.3" FontWeight="Bold" LetterSpacing="0.1"
+                    <TextBlock Text="Optimize Pro" FontSize="16.3" FontWeight="Bold" LetterSpacing="0.1"
                                Foreground="{DynamicResource PincelTinta}" LineHeight="18" />
                     <TextBlock Text="Moldes &amp; encaixe" FontSize="10.9" LetterSpacing="0.3"
                                Foreground="{DynamicResource PincelTintaApagada}" LineHeight="14" />
