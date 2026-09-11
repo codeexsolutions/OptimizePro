@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Timers;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -45,6 +46,18 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial string RelogioHora { get; set; } = "";
+
+    /// <summary>Lida direto do assembly (Version/Company no .csproj) em vez de hardcoded aqui — atualiza sozinho a cada release, sem precisar lembrar de trocar em dois lugares.</summary>
+    public string VersaoDoApp
+    {
+        get
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var versao = assembly.GetName().Version;
+            var empresa = assembly.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "";
+            return $"v{versao?.ToString(3)} — Desenvolvido por {empresa}";
+        }
+    }
 
     /// <summary>Botão "Sair" só faz sentido se o gate estiver ativo (alguém realmente logou) — sem isso, "sair" levaria pra uma tela de login que nem deveria aparecer.</summary>
     public bool PodeSair => _sessao.UsuarioAtual is not null;

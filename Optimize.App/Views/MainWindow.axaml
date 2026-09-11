@@ -7,7 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="750"
         x:Class="Optimize.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/optimize.ico"
         Title="Optimize"
         Background="{DynamicResource PincelFundo}"
         FontFamily="{DynamicResource FonteTexto}"
@@ -198,6 +198,9 @@
                     <TextBlock Text="{Binding StatusWhatsApp, StringFormat='WhatsApp: {0}'}"
                                FontSize="12" Foreground="{DynamicResource PincelTintaFraca}" VerticalAlignment="Center" />
                 </StackPanel>
+
+                <TextBlock Text="{Binding VersaoDoApp}" FontSize="10.5"
+                           Foreground="{DynamicResource PincelTintaApagada}" HorizontalAlignment="Center" />
             </StackPanel>
         </ui:NavigationView.PaneFooter>
 

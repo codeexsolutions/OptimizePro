@@ -4,6 +4,14 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\optimize.ico</ApplicationIcon>
+
+    <!-- Vira as propriedades do arquivo (Explorer → botão direito → Propriedades → Detalhes)
+         e o que aparece no rodapé do app (ver MainWindowViewModel.VersaoDoApp). -->
+    <Version>1.0.0</Version>
+    <Product>Optimize</Product>
+    <Company>Codeex Solutions</Company>
+    <Copyright>© Codeex Solutions</Copyright>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,7 +6,7 @@
         mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="360"
         x:Class="Optimize.App.Views.LoginDoPainelWindow"
         x:DataType="vm:LoginDoPainelViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/optimize.ico"
         Title="Optimize — Login"
         Width="420" Height="360"
         CanResize="False"

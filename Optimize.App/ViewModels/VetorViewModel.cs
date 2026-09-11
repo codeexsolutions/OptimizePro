@@ -77,9 +77,12 @@ public partial class VetorViewModel : ViewModelBase
     /// traçado próprio, pra arte complexa (degradê, várias cores) onde o motor próprio ainda
     /// distorce forma. Precisa do executável VetorGpl publicado ao lado do app (não vem
     /// embutido por licença GPL) — se não achar, a mensagem de erro explica isso.
+    /// Marcado por padrão (10/09/2026, decisão do usuário antes de empacotar pro cliente) —
+    /// o empacotamento precisa publicar Ferramentas/VetorGpl junto do instalador pra isto
+    /// funcionar de cara, sem exigir que o usuário mexa em configuração alguma.
     /// </summary>
     [ObservableProperty]
-    public partial bool UsarMotorExterno { get; set; }
+    public partial bool UsarMotorExterno { get; set; } = true;
 
     /// <summary>
     /// Sugestão automática de "Cores" pra imagem carregada (null antes de calcular). Só um
