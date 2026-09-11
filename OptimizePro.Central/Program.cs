@@ -387,6 +387,19 @@ app.MapPost("/api/staff/login", async (RequisicaoDeLoginDeStaff corpo, IAdminist
 app.MapGet("/api/staff/instalacoes", async (IPainelDeStaffService painel) =>
     Results.Ok(await painel.ListarInstalacoesAsync()));
 
+// Mesmo sem autenticação do endpoint acima (10/09/2026): "cliente esqueceu a senha" — a senha
+// original nunca fica recuperável (só o hash é salvo, ver HashDeSenha), então o único jeito de
+// ajudar é gerar uma NOVA senha aqui e devolver ela na resposta — a ÚNICA vez que ela existe em
+// texto puro. Depois disso ela também vira hash; se a staff não anotar, precisa gerar outra.
+app.MapPost("/api/staff/instalacoes/{instalacaoId}/usuarios/{usuarioId}/redefinir-senha", async (string instalacaoId, string usuarioId, IUsuarioAdminService usuarios) =>
+{
+    var novaSenha = SenhaAleatoria.Gerar();
+    var ok = await usuarios.RedefinirSenhaAsync(instalacaoId, usuarioId, novaSenha);
+    return ok
+        ? Results.Ok(new { novaSenha })
+        : Results.Json(new { erro = "Usuário não encontrado." }, statusCode: StatusCodes.Status404NotFound);
+});
+
 app.Run();
 
 public sealed record RequisicaoDeProvisionamento(uint ClienteIdHash, string? NomeDaFabrica);
