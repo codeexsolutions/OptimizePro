@@ -43,22 +43,22 @@
                                 </StackPanel>
                             </StackPanel>
 
-                            <Grid ColumnDefinitions="*,*,*,*">
-                                <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,6,0">
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+                                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4" Margin="0,0,6,10">
                                     <TextBlock Text="Largura (cm)" FontSize="11" Opacity="0.7" />
-                                    <NumericUpDown Value="{Binding LarguraTecidoCm}" Minimum="10" FormatString="0.0" />
+                                    <NumericUpDown Value="{Binding LarguraTecidoCm}" Minimum="10" FormatString="0.0" HorizontalAlignment="Stretch" />
                                 </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,6,0">
+                                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4" Margin="0,0,0,10">
                                     <TextBlock Text="Espaço (mm)" FontSize="11" Opacity="0.7" />
-                                    <NumericUpDown Value="{Binding EspacoMm}" Minimum="0" FormatString="0.0" />
+                                    <NumericUpDown Value="{Binding EspacoMm}" Minimum="0" FormatString="0.0" HorizontalAlignment="Stretch" />
                                 </StackPanel>
-                                <StackPanel Grid.Column="2" Spacing="4" Margin="0,0,6,0">
+                                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4" Margin="0,0,6,0">
                                     <TextBlock Text="Margem (cm)" FontSize="11" Opacity="0.7" />
-                                    <NumericUpDown Value="{Binding MargemCm}" Minimum="0" FormatString="0.0" />
+                                    <NumericUpDown Value="{Binding MargemCm}" Minimum="0" FormatString="0.0" HorizontalAlignment="Stretch" />
                                 </StackPanel>
-                                <StackPanel Grid.Column="3" Spacing="4">
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
                                     <TextBlock Text="Bancada (cm)" FontSize="11" Opacity="0.7" ToolTip.Tip="Comprimento máximo do rolo — nenhuma peça cruza essa linha. Vazio = sem limite." />
-                                    <NumericUpDown Value="{Binding ComprimentoBancadaCm}" Minimum="0" FormatString="0.0" Watermark="sem limite" />
+                                    <NumericUpDown Value="{Binding ComprimentoBancadaCm}" Minimum="0" FormatString="0.0" Watermark="sem limite" HorizontalAlignment="Stretch" />
                                 </StackPanel>
                             </Grid>
 
