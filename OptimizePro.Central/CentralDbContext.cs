@@ -8,6 +8,7 @@ public class CentralDbContext(DbContextOptions<CentralDbContext> options) : DbCo
     public DbSet<Instalacao> Instalacoes => Set<Instalacao>();
     public DbSet<DadoSincronizado> DadosSincronizados => Set<DadoSincronizado>();
     public DbSet<Administrador> Administradores => Set<Administrador>();
+    public DbSet<ChaveDeMaquina> ChavesDeMaquina => Set<ChaveDeMaquina>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -17,7 +18,6 @@ public class CentralDbContext(DbContextOptions<CentralDbContext> options) : DbCo
             b.Property(i => i.Id).HasColumnName("id").ValueGeneratedNever();
             b.Property(i => i.Codigo).HasColumnName("codigo").IsRequired();
             b.Property(i => i.ClienteIdHash).HasColumnName("cliente_id_hash").IsRequired();
-            b.Property(i => i.ChaveDeApiHash).HasColumnName("chave_de_api_hash").IsRequired();
             b.Property(i => i.NomeDaFabrica).HasColumnName("nome_da_fabrica");
             b.Property(i => i.CriadoEm).HasColumnName("criado_em").IsRequired();
             b.Property(i => i.UltimaSincronizacaoEm).HasColumnName("ultima_sincronizacao_em");
@@ -41,6 +41,18 @@ public class CentralDbContext(DbContextOptions<CentralDbContext> options) : DbCo
             b.HasOne(d => d.Instalacao).WithMany().HasForeignKey(d => d.InstalacaoId).OnDelete(DeleteBehavior.Cascade);
             // Consulta mais comum do painel: "tudo de um tipo desta instalação".
             b.HasIndex(d => new { d.InstalacaoId, d.Tipo });
+        });
+
+        modelBuilder.Entity<ChaveDeMaquina>(b =>
+        {
+            b.ToTable("chaves_de_maquina");
+            b.HasKey(c => new { c.InstalacaoId, c.MaquinaId });
+            b.Property(c => c.InstalacaoId).HasColumnName("instalacao_id");
+            b.Property(c => c.MaquinaId).HasColumnName("maquina_id");
+            b.Property(c => c.ChaveHash).HasColumnName("chave_hash").IsRequired();
+            b.Property(c => c.CriadoEm).HasColumnName("criado_em").IsRequired();
+
+            b.HasOne(c => c.Instalacao).WithMany().HasForeignKey(c => c.InstalacaoId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Administrador>(b =>

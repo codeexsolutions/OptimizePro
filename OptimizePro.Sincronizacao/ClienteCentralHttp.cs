@@ -24,7 +24,7 @@ public sealed record RespostaDeProvisionamento(string InstalacaoId, string? Chav
 public interface IClienteCentralHttp
 {
     bool Configurado { get; }
-    Task<RespostaDeProvisionamento?> ProvisionarAsync(uint clienteIdHash, string? nomeDaFabrica, CancellationToken ct = default);
+    Task<RespostaDeProvisionamento?> ProvisionarAsync(uint clienteIdHash, string maquinaId, string? nomeDaFabrica, CancellationToken ct = default);
     Task<bool> EnviarLoteAsync(string instalacaoId, string chaveDeApi, IReadOnlyList<ItemParaSincronizar> itens, CancellationToken ct = default);
 
     /// <summary>Puxa o estado atual de Usuario da Central (§25 — login/módulos no desktop). Null = falhou (offline, Central fora do ar); quem chama mantém o cache local antigo nesse caso.</summary>
@@ -45,14 +45,14 @@ public sealed class ClienteCentralHttp : IClienteCentralHttp, IDisposable
         _http = new HttpClient { BaseAddress = new Uri(configuracao.UrlBase), Timeout = TimeSpan.FromSeconds(20) };
     }
 
-    public async Task<RespostaDeProvisionamento?> ProvisionarAsync(uint clienteIdHash, string? nomeDaFabrica, CancellationToken ct = default)
+    public async Task<RespostaDeProvisionamento?> ProvisionarAsync(uint clienteIdHash, string maquinaId, string? nomeDaFabrica, CancellationToken ct = default)
     {
         if (_http is null) return null;
 
         try
         {
             var resposta = await _http.PostAsJsonAsync("/api/instalacoes/provisionar",
-                new { clienteIdHash, nomeDaFabrica }, ct);
+                new { clienteIdHash, maquinaId, nomeDaFabrica }, ct);
             if (!resposta.IsSuccessStatusCode) return null;
 
             return await resposta.Content.ReadFromJsonAsync<RespostaDeProvisionamento>(ct);

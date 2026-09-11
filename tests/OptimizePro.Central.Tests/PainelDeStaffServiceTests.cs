@@ -14,11 +14,11 @@ public class PainelDeStaffServiceTests
 
         var inst1 = await instalacoes.CriarAsync(new Instalacao
         {
-            Id = "", ClienteIdHash = 1, ChaveDeApiHash = [1], Codigo = "AAA111", NomeDaFabrica = "Fábrica 1",
+            Id = "", ClienteIdHash = 1, Codigo = "AAA111", NomeDaFabrica = "Fábrica 1",
         });
         var inst2 = await instalacoes.CriarAsync(new Instalacao
         {
-            Id = "", ClienteIdHash = 2, ChaveDeApiHash = [2], Codigo = "BBB222", NomeDaFabrica = "Fábrica 2",
+            Id = "", ClienteIdHash = 2, Codigo = "BBB222", NomeDaFabrica = "Fábrica 2",
         });
 
         await usuarios.CadastrarAsync(inst1.Id, "dono1", "Dono da Fábrica 1", "senha123456", [], true);
@@ -45,7 +45,7 @@ public class PainelDeStaffServiceTests
         var instalacoes = new RepositorioDeInstalacaoFalso();
         var dados = new RepositorioDeDadoSincronizadoFalso();
         var usuarios = new UsuarioAdminService(dados);
-        var inst = await instalacoes.CriarAsync(new Instalacao { Id = "", ClienteIdHash = 1, ChaveDeApiHash = [1], Codigo = "AAA111" });
+        var inst = await instalacoes.CriarAsync(new Instalacao { Id = "", ClienteIdHash = 1, Codigo = "AAA111" });
         await usuarios.CadastrarAsync(inst.Id, "dono", "Dono", "senha123456", [], true);
 
         var servico = new PainelDeStaffService(instalacoes, usuarios);

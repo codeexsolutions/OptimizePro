@@ -21,9 +21,6 @@ public class Instalacao
     /// <summary>Guardado como <see cref="long"/> (cabe um uint inteiro) porque PostgreSQL não tem inteiro sem sinal.</summary>
     public required long ClienteIdHash { get; set; }
 
-    /// <summary>Hash SHA-256 da chave de API — a chave em si só existe no instante da criação (§24.1), nunca fica recuperável depois.</summary>
-    public required byte[] ChaveDeApiHash { get; set; }
-
     public string? NomeDaFabrica { get; set; }
 
     public DateTime CriadoEm { get; set; }

@@ -16,7 +16,7 @@ public sealed class ClienteCentralFalso : IClienteCentralHttp
     public IReadOnlyList<ItemParaSincronizar>? UltimoLoteEnviado { get; private set; }
     public (string InstalacaoId, string ChaveDeApi)? UltimasCredenciaisUsadas { get; private set; }
 
-    public Task<RespostaDeProvisionamento?> ProvisionarAsync(uint clienteIdHash, string? nomeDaFabrica, CancellationToken ct = default)
+    public Task<RespostaDeProvisionamento?> ProvisionarAsync(uint clienteIdHash, string maquinaId, string? nomeDaFabrica, CancellationToken ct = default)
     {
         ChamadasDeProvisionar++;
         return Task.FromResult(ProximaRespostaDeProvisionamento);

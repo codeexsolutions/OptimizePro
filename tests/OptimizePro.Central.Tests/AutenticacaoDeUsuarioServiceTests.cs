@@ -12,8 +12,8 @@ public class AutenticacaoDeUsuarioServiceTests
         string login = "dono", string senha = "senha123", bool habilitado = true, bool ehAdministrador = true)
     {
         var repoInstalacoes = new RepositorioDeInstalacaoFalso();
-        var servicoInstalacoes = new InstalacaoService(repoInstalacoes);
-        var provisionada = await servicoInstalacoes.ProvisionarAsync(12345u, "Fábrica Teste");
+        var servicoInstalacoes = new InstalacaoService(repoInstalacoes, new RepositorioDeChaveDeMaquinaFalso());
+        var provisionada = await servicoInstalacoes.ProvisionarAsync(12345u, "maquina-1", "Fábrica Teste");
 
         var repoDados = new RepositorioDeDadoSincronizadoFalso();
         var (hash, sal) = GerarHash(senha);
@@ -97,9 +97,9 @@ public class AutenticacaoDeUsuarioServiceTests
     public async Task Autenticar_MesmoLoginEmDuasInstalacoes_SoAchaOUsuarioDaInstalacaoCorreta()
     {
         var repoInstalacoes = new RepositorioDeInstalacaoFalso();
-        var servicoInstalacoes = new InstalacaoService(repoInstalacoes);
-        var instalacaoA = await servicoInstalacoes.ProvisionarAsync(111u, "Fábrica A");
-        var instalacaoB = await servicoInstalacoes.ProvisionarAsync(222u, "Fábrica B");
+        var servicoInstalacoes = new InstalacaoService(repoInstalacoes, new RepositorioDeChaveDeMaquinaFalso());
+        var instalacaoA = await servicoInstalacoes.ProvisionarAsync(111u, "maquina-a", "Fábrica A");
+        var instalacaoB = await servicoInstalacoes.ProvisionarAsync(222u, "maquina-b", "Fábrica B");
 
         var repoDados = new RepositorioDeDadoSincronizadoFalso();
         var (hashA, salA) = GerarHash("senhaDaFabricaA");

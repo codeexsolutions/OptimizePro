@@ -18,6 +18,7 @@ builder.Services.AddDbContext<CentralDbContext>(o =>
         ?? throw new InvalidOperationException("Configure a connection string \"Central\" (Postgres) em appsettings/variável de ambiente.")));
 
 builder.Services.AddScoped<IInstalacaoRepository, InstalacaoRepository>();
+builder.Services.AddScoped<IChaveDeMaquinaRepository, ChaveDeMaquinaRepository>();
 builder.Services.AddScoped<IInstalacaoService, InstalacaoService>();
 builder.Services.AddScoped<IDadoSincronizadoRepository, DadoSincronizadoRepository>();
 builder.Services.AddScoped<IAutenticacaoDeUsuarioService, AutenticacaoDeUsuarioService>();
@@ -86,7 +87,7 @@ static async Task<Instalacao?> AutenticarRequisicaoAsync(HttpRequest requisicao,
 // simplesmente não sincroniza ainda; a licença em si continua 100% offline).
 app.MapPost("/api/instalacoes/provisionar", async (RequisicaoDeProvisionamento corpo, IInstalacaoService instalacoes) =>
 {
-    var resultado = await instalacoes.ProvisionarAsync(corpo.ClienteIdHash, corpo.NomeDaFabrica);
+    var resultado = await instalacoes.ProvisionarAsync(corpo.ClienteIdHash, corpo.MaquinaId, corpo.NomeDaFabrica);
     return Results.Ok(new
     {
         instalacaoId = resultado.Instalacao.Id,
@@ -402,7 +403,7 @@ app.MapPost("/api/staff/instalacoes/{instalacaoId}/usuarios/{usuarioId}/redefini
 
 app.Run();
 
-public sealed record RequisicaoDeProvisionamento(uint ClienteIdHash, string? NomeDaFabrica);
+public sealed record RequisicaoDeProvisionamento(uint ClienteIdHash, string MaquinaId, string? NomeDaFabrica);
 public sealed record RequisicaoDeSincronizacao(List<ItemSincronizado> Itens);
 public sealed record RequisicaoDeLogin(string Codigo, string Login, string Senha);
 public sealed record RequisicaoDeBootstrap(string Codigo, string Login, string Nome, string Senha);

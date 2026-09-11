@@ -1,26 +1,39 @@
 namespace OptimizePro.Central;
 
-public sealed class InstalacaoService(IInstalacaoRepository repositorio) : IInstalacaoService
+public sealed class InstalacaoService(IInstalacaoRepository repositorio, IChaveDeMaquinaRepository chaves) : IInstalacaoService
 {
-    public async Task<ResultadoDoProvisionamento> ProvisionarAsync(uint clienteIdHash, string? nomeDaFabrica, CancellationToken ct = default)
+    public async Task<ResultadoDoProvisionamento> ProvisionarAsync(uint clienteIdHash, string maquinaId, string? nomeDaFabrica, CancellationToken ct = default)
     {
-        var existente = await repositorio.ObterPorClienteIdHashAsync(clienteIdHash, ct);
-        if (existente is not null)
-            return new ResultadoDoProvisionamento(existente, null, JaExistia: true);
+        var instalacao = await repositorio.ObterPorClienteIdHashAsync(clienteIdHash, ct);
+        var instalacaoJaExistia = instalacao is not null;
+
+        if (instalacao is null)
+        {
+            var codigo = await GerarCodigoUnicoAsync(ct);
+            instalacao = await repositorio.CriarAsync(new Instalacao
+            {
+                Id = "",
+                Codigo = codigo,
+                ClienteIdHash = clienteIdHash,
+                NomeDaFabrica = nomeDaFabrica,
+            }, ct);
+        }
+
+        // Várias máquinas da mesma gráfica compartilham a instalação acima (mesmo
+        // ClienteIdHash), mas cada MaquinaId ainda precisa da própria chave — sem isso só a
+        // primeira máquina a provisionar conseguiria sincronizar.
+        if (await chaves.ObterAsync(instalacao.Id, maquinaId, ct) is not null)
+            return new ResultadoDoProvisionamento(instalacao, null, instalacaoJaExistia);
 
         var chave = ChaveDeApi.Gerar();
-        var codigo = await GerarCodigoUnicoAsync(ct);
-        var instalacao = new Instalacao
+        await chaves.CriarAsync(new ChaveDeMaquina
         {
-            Id = "",
-            Codigo = codigo,
-            ClienteIdHash = clienteIdHash,
-            ChaveDeApiHash = ChaveDeApi.Hash(chave),
-            NomeDaFabrica = nomeDaFabrica,
-        };
+            InstalacaoId = instalacao.Id,
+            MaquinaId = maquinaId,
+            ChaveHash = ChaveDeApi.Hash(chave),
+        }, ct);
 
-        var criada = await repositorio.CriarAsync(instalacao, ct);
-        return new ResultadoDoProvisionamento(criada, chave, JaExistia: false);
+        return new ResultadoDoProvisionamento(instalacao, chave, instalacaoJaExistia);
     }
 
     private async Task<string> GerarCodigoUnicoAsync(CancellationToken ct)
@@ -38,10 +51,11 @@ public sealed class InstalacaoService(IInstalacaoRepository repositorio) : IInst
     public async Task<Instalacao?> AutenticarAsync(string instalacaoId, string chaveDeApi, CancellationToken ct = default)
     {
         var instalacao = await repositorio.ObterAsync(instalacaoId, ct);
-        if (instalacao is null || !ChaveDeApi.Conferir(chaveDeApi, instalacao.ChaveDeApiHash))
-            return null;
+        if (instalacao is null) return null;
 
-        return instalacao;
+        var chavesDaInstalacao = await chaves.ListarDaInstalacaoAsync(instalacaoId, ct);
+        var alguma = chavesDaInstalacao.Any(c => ChaveDeApi.Conferir(chaveDeApi, c.ChaveHash));
+        return alguma ? instalacao : null;
     }
 
     public Task RegistrarSincronizacaoAsync(string instalacaoId, CancellationToken ct = default) =>

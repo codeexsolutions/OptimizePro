@@ -61,11 +61,14 @@ public sealed class SincronizacaoService(
         if (!estadoDaLicenca.Liberado || estadoDaLicenca.ClienteIdHash is not { } clienteIdHash)
             return null; // sem licença ativa não tem ClienteIdHash — nada pra provisionar ainda.
 
-        var resposta = await cliente.ProvisionarAsync(clienteIdHash, null, ct);
+        var maquinaId = armazenamento.ObterOuCriarIdentidadeDaMaquina();
+        var resposta = await cliente.ProvisionarAsync(clienteIdHash, maquinaId, null, ct);
 
-        // "jaExistia sem chave nova" é um gap conhecido (ex.: reinstalação perdeu o arquivo
-        // local, mas a Central já tinha esse ClienteIdHash) — sem uma rota de "regenerar
-        // chave" na Central, não tem como recuperar sozinho aqui. Fica pendente pra depois.
+        // "jaExistia sem chave nova" agora só acontece se ESTA MÁQUINA já tinha provisionado
+        // antes e perdeu o arquivo local (ex.: reinstalação sem limpar %LocalAppData%) — não é
+        // mais o caminho comum de "outra máquina da mesma gráfica já provisionou" (cada
+        // MaquinaId ganha sua própria chave, ver InstalacaoService). Sem uma rota de
+        // "regenerar chave" na Central, não tem como recuperar sozinho aqui.
         if (resposta?.ChaveDeApi is null) return null;
 
         var novoEstado = new EstadoLocalDeSincronizacao(resposta.InstalacaoId, resposta.ChaveDeApi);

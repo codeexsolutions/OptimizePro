@@ -47,4 +47,8 @@ public sealed class ArmazenamentoDeSincronizacao
         var protegido = ProtectedData.Protect(json, Entropia, DataProtectionScope.CurrentUser);
         File.WriteAllBytes(_arquivoDeEstado, protegido);
     }
+
+    /// <summary>ID desta máquina física (§24.1) — arquivo-irmão do estado de sincronização, sem DPAPI porque não é segredo, só precisa ser estável.</summary>
+    public string ObterOuCriarIdentidadeDaMaquina() =>
+        IdentidadeDaMaquina.ObterOuCriar(Path.Combine(Path.GetDirectoryName(_arquivoDeEstado) ?? ".", "maquina.dat"));
 }
