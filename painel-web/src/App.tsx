@@ -1,6 +1,7 @@
 import { Navigate, Route, BrowserRouter, Routes } from "react-router-dom";
 import { ProvedorDeAutenticacao, useAutenticacao } from "./auth/AuthContext";
 import { Login } from "./pages/Login";
+import { PrimeiroAcesso } from "./pages/PrimeiroAcesso";
 import { Layout } from "./layout/Layout";
 import { Maquinas } from "./pages/dashboard/Maquinas";
 import { Impressoras } from "./pages/dashboard/Impressoras";
@@ -49,6 +50,7 @@ function Rotas() {
   return (
     <Routes>
       <Route path="/login" element={carregando ? null : sessao ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/primeiro-acesso" element={carregando ? null : sessao ? <Navigate to="/" replace /> : <PrimeiroAcesso />} />
       <Route
         element={
           <RotaProtegida>

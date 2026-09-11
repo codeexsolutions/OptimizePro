@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAutenticacao } from "../auth/AuthContext";
 import { ErroDaApi } from "../api/central";
 
@@ -60,6 +60,10 @@ export function Login() {
         <button type="submit" disabled={enviando}>
           {enviando ? "Entrando..." : "Entrar"}
         </button>
+
+        <p className="apoio">
+          Instalação nova, sem usuário ainda? <Link to="/primeiro-acesso">Criar o primeiro acesso</Link>
+        </p>
       </form>
     </div>
   );
