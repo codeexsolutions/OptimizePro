@@ -101,8 +101,9 @@ public partial class App : Application
                     services.AddScoped<IAutenticacaoService, AutenticacaoService>();
                     services.AddSingleton<SessaoDoPainel>();
 
-                    // Sincronização com a Central (§24) — best-effort; sem OPTIMIZE_CENTRAL_URL
-                    // configurada, ClienteCentralHttp.Configurado fica false e nada é enviado.
+                    // Sincronização com a Central (§24) — best-effort; aponta pra produção por
+                    // padrão (ver ConfiguracaoDaCentral), OPTIMIZE_CENTRAL_URL só existe pra
+                    // desenvolvimento sobrescrever com uma Central local.
                     services.AddSingleton(ConfiguracaoDaCentral.DoAmbiente());
                     services.AddSingleton<IClienteCentralHttp, ClienteCentralHttp>();
                     services.AddSingleton<ArmazenamentoDeSincronizacao>();

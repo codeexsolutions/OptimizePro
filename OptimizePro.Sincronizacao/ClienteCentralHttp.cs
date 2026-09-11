@@ -3,16 +3,19 @@ using System.Net.Http.Json;
 namespace OptimizePro.Sincronizacao;
 
 /// <summary>
-/// Onde a Central está hospedada (§24) — via variável de ambiente
-/// (<c>OPTIMIZE_CENTRAL_URL</c>) porque isso muda entre "testando local" (o
-/// <c>dotnet run</c> do <c>OptimizePro.Central</c> em <c>http://localhost:5099</c>, usado pra
-/// testar contra o Supabase) e produção (URL pública real, ainda não decidida/hospedada —
-/// hospedagem é responsabilidade do usuário, fora do que este ambiente de desenvolvimento
-/// provisiona). Sem a variável, sincronização simplesmente não acontece (fail-open).
+/// Onde a Central está hospedada (§24). Produção (Railway, desde 10/09/2026) é o padrão — todo
+/// app instalado num cliente precisa sincronizar sem precisar de nenhuma configuração manual na
+/// máquina dele, e o instalador não seta variável de ambiente nenhuma. A variável
+/// <c>OPTIMIZE_CENTRAL_URL</c> continua existindo só pra desenvolvimento: sobrescreve o padrão
+/// quando alguém quer testar contra uma Central local (<c>dotnet run</c> em
+/// <c>http://localhost:5099</c>) em vez da de produção.
 /// </summary>
 public sealed record ConfiguracaoDaCentral(string? UrlBase)
 {
-    public static ConfiguracaoDaCentral DoAmbiente() => new(Environment.GetEnvironmentVariable("OPTIMIZE_CENTRAL_URL"));
+    private const string UrlDeProducao = "https://optimizepro-production.up.railway.app";
+
+    public static ConfiguracaoDaCentral DoAmbiente() =>
+        new(Environment.GetEnvironmentVariable("OPTIMIZE_CENTRAL_URL") is { Length: > 0 } url ? url : UrlDeProducao);
 }
 
 public sealed record RespostaDeProvisionamento(string InstalacaoId, string? ChaveDeApi, bool JaExistia);
