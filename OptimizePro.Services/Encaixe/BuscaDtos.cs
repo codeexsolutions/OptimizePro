@@ -15,7 +15,9 @@ public sealed record ConfiguracaoDeEncaixe(
     double MargemCm,
     long TempoMaximoMs = 8_000,
     long MsSemGanhoParaParedeMs = 1_500,
-    ModoDeEncaixe Modo = ModoDeEncaixe.Automatico);
+    ModoDeEncaixe Modo = ModoDeEncaixe.Automatico,
+    /// <summary>"Bancada" (porte de <c>encaixeMotor.js</c>) — comprimento máximo do rolo em cm; nenhuma peça cruza essa linha. <c>null</c> = sem limite, o comportamento de sempre.</summary>
+    double? ComprimentoBancadaCm = null);
 
 public sealed record ItemDeResultado(string PecaId, double X, double Y, double LarguraCm, double AlturaCm, int RotacaoGraus);
 

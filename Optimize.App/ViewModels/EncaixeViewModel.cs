@@ -64,6 +64,10 @@ public partial class EncaixeViewModel : ViewModelBase
     [ObservableProperty]
     public partial double MargemCm { get; set; } = 1;
 
+    /// <summary>"Bancada" (porte de <c>encaixeMotor.js</c>) — comprimento máximo do rolo em cm; nenhuma peça cruza essa linha. Null/0 = sem limite (padrão de sempre).</summary>
+    [ObservableProperty]
+    public partial double? ComprimentoBancadaCm { get; set; }
+
     /// <summary>"Como encaixar" — automático deixa contorno+retângulo disputarem; forçar um só é escolha explícita.</summary>
     [ObservableProperty]
     public partial ModoDeEncaixe ModoDeEncaixe { get; set; } = ModoDeEncaixe.Automatico;
@@ -354,7 +358,8 @@ public partial class EncaixeViewModel : ViewModelBase
             itens.Select(i => new ItemParaChaveExata(i.Id, i.Contorno, i.Quantidade, i.Giro)).ToList(),
             LarguraTecidoCm, EspacoCm, MargemCm);
 
-        var config = new ConfiguracaoDeEncaixe(LarguraTecidoCm, EspacoCm, MargemCm, TempoDeBuscaSegundos * 1000L, 1_500, ModoDeEncaixe);
+        var config = new ConfiguracaoDeEncaixe(LarguraTecidoCm, EspacoCm, MargemCm, TempoDeBuscaSegundos * 1000L, 1_500, ModoDeEncaixe,
+            ComprimentoBancadaCm is > 0 ? ComprimentoBancadaCm : null);
         var progresso = new Progress<AndamentoDoEncaixe>(a =>
         {
             Tentativas = a.Tentativas;
@@ -483,6 +488,20 @@ public partial class EncaixeViewModel : ViewModelBase
         {
             // idem — memória não é requisito pro resultado do encaixe em si.
         }
+    }
+
+    /// <summary>
+    /// "PDF em tamanho real" (§11) — chamado do code-behind da View, que cuida do diálogo de
+    /// salvar (mesmo padrão de <see cref="VetorViewModel.GerarPdf"/>). Devolve null se ainda
+    /// não há resultado.
+    /// </summary>
+    public byte[]? GerarPdf()
+    {
+        if (Resultado is not { } resultado) return null;
+
+        var contornosPorPeca = Arquivos.ToDictionary(a => a.Id, a => a.Contorno);
+        return ExportadorDeEncaixeParaPdf.Exportar(LarguraTecidoCm, resultado.ConsumoCm, resultado.Posicoes, contornosPorPeca,
+            ComprimentoBancadaCm is > 0 ? ComprimentoBancadaCm : null);
     }
 
     [RelayCommand]

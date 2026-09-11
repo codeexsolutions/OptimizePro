@@ -13,7 +13,8 @@ public sealed record ResultadoCaixa(IReadOnlyList<PosicaoDeItemCaixa> Posicoes, 
 public static class EncaixePorCaixaExecutor
 {
     public static ResultadoCaixa Encaixar(
-        double larguraTecidoCm, IReadOnlyList<(ItemParaCaixa Item, bool PermiteDeitar)> ordem, HeuristicaDeCaixa heuristica)
+        double larguraTecidoCm, IReadOnlyList<(ItemParaCaixa Item, bool PermiteDeitar)> ordem, HeuristicaDeCaixa heuristica,
+        double? comprimentoBancadaCm = null)
     {
         var encaixador = new EncaixadorPorCaixa(larguraTecidoCm);
         var posicoes = new List<PosicaoDeItemCaixa>();
@@ -39,15 +40,39 @@ public static class EncaixePorCaixaExecutor
                 continue;
             }
 
-            encaixador.Confirmar(e);
-            posicoes.Add(new PosicaoDeItemCaixa(item.Id, e.X, e.Y, e.Largura, e.Altura, usarDeitado));
+            // Bancada (§ Bancada.cs) — diferente do motor de Contorno (o "relevo" garante que
+            // empurrar nunca sobrepõe), aqui a escolha vem de uma lista de retângulos livres, e
+            // empurrar demais podia entrar num pedaço que ninguém provou estar vazio. Em vez de
+            // confiar cegamente, confere contra toda peça já confirmada — só aceita o empurrão
+            // se ele passar limpo. Quando não passa (raro), a peça fica na posição original,
+            // mesmo cruzando a linha — mais seguro que arriscar uma sobreposição de verdade.
+            var confirmada = EmpurrarSeSeguro(e, comprimentoBancadaCm, posicoes);
+
+            encaixador.Confirmar(confirmada);
+            posicoes.Add(new PosicaoDeItemCaixa(item.Id, confirmada.X, confirmada.Y, confirmada.Largura, confirmada.Altura, usarDeitado));
 
             areaReal += item.AreaRealCm2;
 
-            var topoDoItem = e.Y + e.Altura;
+            var topoDoItem = confirmada.Y + confirmada.Altura;
             if (topoDoItem > fundoMaximo) fundoMaximo = topoDoItem;
         }
 
         return new ResultadoCaixa(posicoes, naoEncaixados, fundoMaximo, areaReal);
+    }
+
+    private static EscolhaDeCaixa EmpurrarSeSeguro(EscolhaDeCaixa escolha, double? comprimentoBancadaCm, IReadOnlyList<PosicaoDeItemCaixa> jaConfirmadas)
+    {
+        var yEmpurrado = Bancada.Empurrar(escolha.Y, escolha.Altura, comprimentoBancadaCm);
+        if (yEmpurrado == escolha.Y) return escolha;
+
+        var candidata = escolha with { Y = yEmpurrado };
+        foreach (var outra in jaConfirmadas)
+        {
+            if (candidata.X < outra.X + outra.Largura && candidata.X + candidata.Largura > outra.X &&
+                candidata.Y < outra.Y + outra.Altura && candidata.Y + candidata.Altura > outra.Y)
+                return escolha; // empurrar aqui esbarraria em peça já confirmada — não arrisca.
+        }
+
+        return candidata;
     }
 }

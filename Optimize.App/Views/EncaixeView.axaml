@@ -43,7 +43,7 @@
                                 </StackPanel>
                             </StackPanel>
 
-                            <Grid ColumnDefinitions="*,*,*">
+                            <Grid ColumnDefinitions="*,*,*,*">
                                 <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,6,0">
                                     <TextBlock Text="Largura (cm)" FontSize="11" Opacity="0.7" />
                                     <NumericUpDown Value="{Binding LarguraTecidoCm}" Minimum="10" FormatString="0.0" />
@@ -52,9 +52,13 @@
                                     <TextBlock Text="Espaço (mm)" FontSize="11" Opacity="0.7" />
                                     <NumericUpDown Value="{Binding EspacoMm}" Minimum="0" FormatString="0.0" />
                                 </StackPanel>
-                                <StackPanel Grid.Column="2" Spacing="4">
+                                <StackPanel Grid.Column="2" Spacing="4" Margin="0,0,6,0">
                                     <TextBlock Text="Margem (cm)" FontSize="11" Opacity="0.7" />
                                     <NumericUpDown Value="{Binding MargemCm}" Minimum="0" FormatString="0.0" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="3" Spacing="4">
+                                    <TextBlock Text="Bancada (cm)" FontSize="11" Opacity="0.7" ToolTip.Tip="Comprimento máximo do rolo — nenhuma peça cruza essa linha. Vazio = sem limite." />
+                                    <NumericUpDown Value="{Binding ComprimentoBancadaCm}" Minimum="0" FormatString="0.0" Watermark="sem limite" />
                                 </StackPanel>
                             </Grid>
 
@@ -195,7 +199,15 @@
                             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                             BorderThickness="1" CornerRadius="8" Padding="20" IsVisible="{Binding TemResultado}">
                         <StackPanel Spacing="14">
-                            <TextBlock Text="Resultado" FontSize="16" FontWeight="SemiBold" />
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Resultado" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                    <Button Content="Imprimir" Click="Imprimir_OnClick" ToolTip.Tip="Envia o PDF em tamanho real direto pra impressora padrão" />
+                                    <Button Content="Baixar" Click="Baixar_OnClick" ToolTip.Tip="Salva um PNG de prévia do encaixe (não é o arquivo pra corte)" />
+                                    <Button Content="Salvar PDF (tamanho real)" Click="SalvarPdf_OnClick"
+                                            Background="{DynamicResource SystemAccentColor}" Foreground="White" CornerRadius="4" />
+                                </StackPanel>
+                            </Grid>
 
                             <Border Background="{DynamicResource SystemFillColorCautionBackgroundBrush}" CornerRadius="6" Padding="14"
                                     IsVisible="{Binding TemMelhorGuardado}">
@@ -359,7 +371,7 @@
                                         </Canvas>
 
                                         <!-- O tecido em si: retângulo claro contrastando com a mesa escura ao redor, com o corte (arte real das peças) por cima. -->
-                                        <Grid Grid.Row="1" Grid.Column="1" Width="{Binding CanvasLarguraPx}" Height="{Binding CanvasAlturaPx}">
+                                        <Grid x:Name="TecidoPreviewGrid" Grid.Row="1" Grid.Column="1" Width="{Binding CanvasLarguraPx}" Height="{Binding CanvasAlturaPx}">
                                             <Rectangle Fill="#EDE7DA" Stroke="#F2762E" StrokeThickness="1.5" StrokeDashArray="4,3" />
                                             <ItemsControl ItemsSource="{Binding Posicoes}">
                                                 <ItemsControl.ItemsPanel>

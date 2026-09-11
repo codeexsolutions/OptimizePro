@@ -3,7 +3,7 @@
 ; Baixar Inno Setup: https://jrsoftware.org/isdl.php
 
 #define MyAppName "Optimize Pro"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "Codeex Solutions"
 #define MyAppExeName "OptimizePro.App.exe"
 
@@ -28,6 +28,13 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesInstallIn64BitMode=x64compatible
 DisableProgramGroupPage=yes
+; AppId fixo + pasta de instalação sem versão no caminho (linha 16) é o que faz rodar este
+; instalador de novo ATUALIZAR em vez de instalar do zero: o Inno reconhece pelo AppId que é
+; o mesmo app já instalado e sobrescreve os arquivos na mesma pasta, sem duplicar atalho nem
+; entrada em "Programas e Recursos". CloseApplications fecha o Optimize Pro sozinho se ele
+; estiver aberto na hora (senão o .exe travado faria a atualização falhar).
+CloseApplications=force
+RestartApplications=yes
 
 [Languages]
 Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"

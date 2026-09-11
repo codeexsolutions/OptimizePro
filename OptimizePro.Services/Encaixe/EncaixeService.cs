@@ -151,7 +151,7 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
             // dezenas de milhares de tentativas perdedoras de uma busca (só a ordem VENCEDORA é
             // reconstruída de novo, em detalhe, depois — ver passo 7 abaixo) era alocação pura
             // jogada fora.
-            var resultado = ExecutarReceita(receita, ordem, itensContorno, itensCaixa, itensNfp, contornosOriginaisPorRotacaoPorId, colsTecido, grade, config.MargemCm, config.LarguraTecidoCm, candidatosCruzados, candidatosDeBlocoPorPeca, detalhado: false);
+            var resultado = ExecutarReceita(receita, ordem, itensContorno, itensCaixa, itensNfp, contornosOriginaisPorRotacaoPorId, colsTecido, grade, config.MargemCm, config.LarguraTecidoCm, config.ComprimentoBancadaCm, candidatosCruzados, candidatosDeBlocoPorPeca, detalhado: false);
 
             if (progresso is not null)
             {
@@ -218,7 +218,7 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
         // 7) Reconstrói o resultado completo (posições/rotações) da receita vencedora — a
         // busca em si só precisa do consumo (ResultadoDeTentativa), não das posições.
         var melhor = buscaParalela.Melhor;
-        var final = ExecutarReceita(melhor.MelhorReceita, melhor.MelhorOrdem, itensContorno, itensCaixa, itensNfp, contornosOriginaisPorRotacaoPorId, colsTecido, grade, config.MargemCm, config.LarguraTecidoCm, candidatosCruzados, candidatosDeBlocoPorPeca);
+        var final = ExecutarReceita(melhor.MelhorReceita, melhor.MelhorOrdem, itensContorno, itensCaixa, itensNfp, contornosOriginaisPorRotacaoPorId, colsTecido, grade, config.MargemCm, config.LarguraTecidoCm, config.ComprimentoBancadaCm, candidatosCruzados, candidatosDeBlocoPorPeca);
 
         var aproveitamento = final.ConsumoCm > 0 && config.LarguraTecidoCm > 0
             ? Math.Clamp(final.AreaRealCm2 / (config.LarguraTecidoCm * final.ConsumoCm) * 100, 0, 100)
@@ -270,15 +270,15 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
         Receita receita, IReadOnlyList<int> ordem,
         IReadOnlyList<ItemContorno> itensContorno, IReadOnlyList<ItemCaixa> itensCaixa, IReadOnlyList<ItemParaNfp> itensNfp,
         IReadOnlyDictionary<string, IReadOnlyDictionary<int, IReadOnlyList<PontoXY>>> contornosOriginaisPorRotacaoPorId,
-        int colsTecido, Grade grade, double margemCm, double larguraTecidoCm,
+        int colsTecido, Grade grade, double margemCm, double larguraTecidoCm, double? comprimentoBancadaCm,
         IReadOnlyList<ParCruzado> candidatosCruzados,
         IReadOnlyDictionary<(string PecaBase, int Tamanho), IReadOnlyList<Forma>> candidatosDeBlocoPorPeca,
         bool detalhado = true) =>
         receita.Motor switch
         {
-            MotorDeEncaixe.Contorno => ExecutarContorno(receita, ordem, itensContorno, colsTecido, grade.PassoCm, margemCm, candidatosCruzados, candidatosDeBlocoPorPeca, detalhado),
-            MotorDeEncaixe.Retangulo => ExecutarRetangulo(receita, ordem, itensCaixa, larguraTecidoCm, margemCm),
-            MotorDeEncaixe.Nfp => ExecutarNfp(ordem, itensNfp, contornosOriginaisPorRotacaoPorId, larguraTecidoCm, margemCm, grade),
+            MotorDeEncaixe.Contorno => ExecutarContorno(receita, ordem, itensContorno, colsTecido, grade.PassoCm, margemCm, Bancada.EmCelulas(comprimentoBancadaCm, grade.PassoCm), candidatosCruzados, candidatosDeBlocoPorPeca, detalhado),
+            MotorDeEncaixe.Retangulo => ExecutarRetangulo(receita, ordem, itensCaixa, larguraTecidoCm, margemCm, comprimentoBancadaCm),
+            MotorDeEncaixe.Nfp => ExecutarNfp(ordem, itensNfp, contornosOriginaisPorRotacaoPorId, larguraTecidoCm, margemCm, grade, comprimentoBancadaCm),
             MotorDeEncaixe.Vaos => ExecutarVaos(ordem, itensContorno, colsTecido, grade.PassoCm, margemCm, detalhado),
             _ => throw new NotSupportedException($"Motor {receita.Motor} ainda não despachado (faixas ficam pro próximo incremento)."),
         };
@@ -328,6 +328,7 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
     /// </summary>
     private static ResultadoMotor ExecutarContorno(
         Receita receita, IReadOnlyList<int> ordem, IReadOnlyList<ItemContorno> itens, int colsTecido, double passoCm, double margemCm,
+        int? linhasDaBancada,
         IReadOnlyList<ParCruzado> candidatosCruzados,
         IReadOnlyDictionary<(string PecaBase, int Tamanho), IReadOnlyList<Forma>> candidatosDeBlocoPorPeca,
         bool detalhado = true)
@@ -352,7 +353,7 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
         try
         {
             Array.Clear(perfil, 0, colsTecido);
-            return ExecutarContornoComPerfil(receita, ordem, itens, colsTecido, passoCm, margemCm, candidatosCruzados, candidatosDeBlocoPorPeca, tamanhoDoBloco, heuristica, perfil, detalhado);
+            return ExecutarContornoComPerfil(receita, ordem, itens, colsTecido, passoCm, margemCm, linhasDaBancada, candidatosCruzados, candidatosDeBlocoPorPeca, tamanhoDoBloco, heuristica, perfil, detalhado);
         }
         finally
         {
@@ -362,6 +363,7 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
 
     private static ResultadoMotor ExecutarContornoComPerfil(
         Receita receita, IReadOnlyList<int> ordem, IReadOnlyList<ItemContorno> itens, int colsTecido, double passoCm, double margemCm,
+        int? linhasDaBancada,
         IReadOnlyList<ParCruzado> candidatosCruzados,
         IReadOnlyDictionary<(string PecaBase, int Tamanho), IReadOnlyList<Forma>> candidatosDeBlocoPorPeca,
         int tamanhoDoBloco, HeuristicaDeContorno heuristica, int[] perfil, bool detalhado)
@@ -431,6 +433,13 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
             }
 
             var (forma, pos) = e;
+
+            // A bancada (§ Bancada.cs) — empurra ANTES de marcar espaço ocupado no perfil, nunca
+            // depois: é isso que garante que "descer mais nunca cria sobreposição" continua
+            // valendo pras próximas unidades (elas leem o perfil já com o empurrão aplicado).
+            var yEmpurrado = Bancada.Empurrar(pos.Y, forma.MaxBase + 1, linhasDaBancada);
+            if (yEmpurrado != pos.Y) pos = pos with { Y = yEmpurrado };
+
             for (var c = 0; c < forma.Colunas; c++)
             {
                 if (forma.Topo[c] < 0) continue;
@@ -706,12 +715,12 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
         return [.. unidades.OrderBy(u => u.Itens.Min(indice => posicaoNoOrdem[indice]))];
     }
 
-    private static ResultadoMotor ExecutarRetangulo(Receita receita, IReadOnlyList<int> ordem, IReadOnlyList<ItemCaixa> itens, double larguraTecidoCm, double margemCm)
+    private static ResultadoMotor ExecutarRetangulo(Receita receita, IReadOnlyList<int> ordem, IReadOnlyList<ItemCaixa> itens, double larguraTecidoCm, double margemCm, double? comprimentoBancadaCm)
     {
         var heuristica = receita.HeuristicaCaixa!.Value;
         var itensOrdenados = ordem.Select(i => (itens[i].Item, itens[i].PermiteDeitar)).ToList();
 
-        var resultado = EncaixePorCaixaExecutor.Encaixar(larguraTecidoCm, itensOrdenados, heuristica);
+        var resultado = EncaixePorCaixaExecutor.Encaixar(larguraTecidoCm, itensOrdenados, heuristica, comprimentoBancadaCm);
 
         var posicoes = resultado.Posicoes
             .Select(p => new ItemDeResultado(p.ItemId, p.X, p.Y, p.Largura, p.Altura, p.Deitada ? 90 : 0))
@@ -738,7 +747,7 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
     private static ResultadoMotor ExecutarNfp(
         IReadOnlyList<int> ordem, IReadOnlyList<ItemParaNfp> itensNfp,
         IReadOnlyDictionary<string, IReadOnlyDictionary<int, IReadOnlyList<PontoXY>>> contornosOriginaisPorRotacaoPorId,
-        double larguraTecidoCm, double margemCm, Grade grade)
+        double larguraTecidoCm, double margemCm, Grade grade, double? comprimentoBancadaCm)
     {
         // Posiciona com o contorno RESIMPLIFICADO (mais leve pro NFP, ver comentário na
         // montagem de itensNfp) — mas a checagem de segurança e o resultado final usam o
@@ -746,7 +755,23 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
         var ordenados = ordem.Select(i => itensNfp[i]).ToList();
         var resultado = EncaixadorPorNfp.Encaixar(larguraTecidoCm, ordenados);
 
-        var posicionados = resultado.Posicoes
+        // Bancada (§ Bancada.cs) — diferente do motor de Contorno (seguro por construção, o
+        // relevo garante que "descer mais" nunca sobrepõe), o NFP posiciona por matemática de
+        // polígono contínuo; empurrar o Y aqui não tem a mesma garantia geométrica. Em vez de
+        // provar isso por conta própria, empurra e deixa a checagem de segurança OFICIAL do
+        // motor (abaixo, independente, já existia por outro motivo) decidir: se o empurrão
+        // criou sobreposição de verdade, a tentativa é desqualificada — nunca sai um resultado
+        // sobreposto daqui, exatamente a mesma postura já usada pro resto do NFP.
+        var posicoesEmpurradas = resultado.Posicoes
+            .Select(p =>
+            {
+                var caixaOriginal = Geometria.CaixaDeContorno(contornosOriginaisPorRotacaoPorId[p.ItemId][p.RotacaoGraus]);
+                var yEmpurrado = Bancada.Empurrar(p.Y, caixaOriginal.Altura, comprimentoBancadaCm);
+                return yEmpurrado == p.Y ? p : p with { Y = yEmpurrado };
+            })
+            .ToList();
+
+        var posicionados = posicoesEmpurradas
             .Select(p => (Contorno: contornosOriginaisPorRotacaoPorId[p.ItemId][p.RotacaoGraus], p.X, p.Y))
             .ToList();
 
@@ -756,7 +781,7 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
             return new ResultadoMotor(double.PositiveInfinity, todosOsIds.Count, [], todosOsIds, 0);
         }
 
-        var posicoes = resultado.Posicoes
+        var posicoes = posicoesEmpurradas
             .Select(p =>
             {
                 var contorno = contornosOriginaisPorRotacaoPorId[p.ItemId][p.RotacaoGraus];
@@ -765,8 +790,12 @@ public sealed class EncaixeService(IEncaixeMemoriaService memoria) : IEncaixeSer
             })
             .ToList();
 
-        var areaReal = resultado.Posicoes.Sum(p => Math.Abs(Geometria.AreaComSinal(contornosOriginaisPorRotacaoPorId[p.ItemId][p.RotacaoGraus])));
-        var consumo = resultado.FundoMaximo + margemCm * 2;
+        var areaReal = posicoesEmpurradas.Sum(p => Math.Abs(Geometria.AreaComSinal(contornosOriginaisPorRotacaoPorId[p.ItemId][p.RotacaoGraus])));
+
+        // Recalculado por cima das posições JÁ empurradas — resultado.FundoMaximo é de antes do
+        // empurrão e ficaria pra trás quando a bancada mexe em alguma peça.
+        var fundoMaximo = posicoes.Count > 0 ? posicoes.Max(p => p.Y + p.AlturaCm) : 0;
+        var consumo = fundoMaximo + margemCm * 2;
 
         return new ResultadoMotor(consumo, resultado.ItensNaoEncaixados.Count, posicoes, resultado.ItensNaoEncaixados, areaReal);
     }

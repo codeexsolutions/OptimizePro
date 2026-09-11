@@ -278,4 +278,75 @@ public class EncaixeServiceTests : IDisposable
                 SeSobrepoem(resultado.Posicoes[i], resultado.Posicoes[j]).Should().BeFalse(
                     $"{resultado.Posicoes[i].PecaId} e {resultado.Posicoes[j].PecaId} não podem se sobrepor (receita vencedora: {resultado.ReceitaVencedora})");
     }
+
+    /// <summary>"Nenhuma peça cruza a linha entre bancadas" (§ Bancada.cs) — a mesma garantia que o <c>npm run bancada:corte</c> do projeto original confere, aqui pro motor de Contorno.</summary>
+    [Fact]
+    public async Task BuscarMelhorEncaixe_ComBancada_MotorContorno_NenhumaPecaCruzaALinha()
+    {
+        var pecas = new[] { Retangulo("A", 15, 10, quantidade: 6), Retangulo("B", 8, 8, quantidade: 5) };
+        var config = new ConfiguracaoDeEncaixe(
+            60, 0.5, 1, TempoMaximoMs: 1_500, MsSemGanhoParaParedeMs: 400,
+            Modo: ModoDeEncaixe.SempreContorno, ComprimentoBancadaCm: 25);
+
+        var resultado = await _servico.BuscarMelhorEncaixeAsync(pecas, config);
+
+        resultado.ItensNaoEncaixados.Should().BeEmpty();
+        AssertNenhumaPecaCruzaABancada(resultado.Posicoes, comprimentoBancadaCm: 25);
+    }
+
+    [Fact]
+    public async Task BuscarMelhorEncaixe_ComBancada_MotorRetangulo_NenhumaPecaCruzaALinha()
+    {
+        var pecas = new[] { Retangulo("A", 15, 10, quantidade: 6), Retangulo("B", 8, 8, quantidade: 5) };
+        var config = new ConfiguracaoDeEncaixe(
+            60, 0.5, 1, TempoMaximoMs: 1_500, MsSemGanhoParaParedeMs: 400,
+            Modo: ModoDeEncaixe.SempreCaixa, ComprimentoBancadaCm: 25);
+
+        var resultado = await _servico.BuscarMelhorEncaixeAsync(pecas, config);
+
+        resultado.ItensNaoEncaixados.Should().BeEmpty();
+        AssertNenhumaPecaCruzaABancada(resultado.Posicoes, comprimentoBancadaCm: 25);
+    }
+
+    [Fact]
+    public async Task BuscarMelhorEncaixe_ComBancada_QualquerReceitaVencedora_NuncaSobrepoeENuncaCruzaALinha()
+    {
+        var pecas = new[] { Retangulo("A", 12, 8, quantidade: 5), Retangulo("B", 9, 9, quantidade: 4) };
+        var config = new ConfiguracaoDeEncaixe(
+            40, 0.3, 1, TempoMaximoMs: 2_000, MsSemGanhoParaParedeMs: 500, ComprimentoBancadaCm: 20);
+
+        var resultado = await _servico.BuscarMelhorEncaixeAsync(pecas, config);
+
+        for (var i = 0; i < resultado.Posicoes.Count; i++)
+            for (var j = i + 1; j < resultado.Posicoes.Count; j++)
+                SeSobrepoem(resultado.Posicoes[i], resultado.Posicoes[j]).Should().BeFalse(
+                    $"{resultado.Posicoes[i].PecaId} e {resultado.Posicoes[j].PecaId} não podem se sobrepor (receita vencedora: {resultado.ReceitaVencedora})");
+
+        AssertNenhumaPecaCruzaABancada(resultado.Posicoes, comprimentoBancadaCm: 20);
+    }
+
+    [Fact]
+    public async Task BuscarMelhorEncaixe_SemBancada_ComportamentoIdenticoAoDeAntes()
+    {
+        // ComprimentoBancadaCm null (o padrão) precisa continuar dando exatamente o mesmo
+        // resultado de antes desta funcionalidade existir — nenhuma peça devia mudar de posição
+        // só porque o parâmetro novo existe no record.
+        var pecas = new[] { Retangulo("A", 20, 10, quantidade: 3), Retangulo("B", 15, 15, quantidade: 2) };
+
+        var resultado = await _servico.BuscarMelhorEncaixeAsync(pecas, ConfigRapida());
+
+        resultado.ItensNaoEncaixados.Should().BeEmpty();
+        resultado.Posicoes.Should().HaveCount(5);
+    }
+
+    private static void AssertNenhumaPecaCruzaABancada(IReadOnlyList<ItemDeResultado> posicoes, double comprimentoBancadaCm)
+    {
+        const double epsilon = 1e-6;
+        foreach (var pos in posicoes)
+        {
+            var dentro = pos.Y % comprimentoBancadaCm;
+            (dentro + pos.AlturaCm).Should().BeLessThanOrEqualTo(comprimentoBancadaCm + epsilon,
+                $"a peça {pos.PecaId} (Y={pos.Y:0.00}, altura={pos.AlturaCm:0.00}) não pode cruzar a linha de uma bancada de {comprimentoBancadaCm}cm");
+        }
+    }
 }
