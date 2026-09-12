@@ -42,6 +42,7 @@ public partial class App : Application
     private IClassicDesktopStyleApplicationLifetime? _desktop;
     private CaminhosDoApp? _caminhos;
     private Mutex? _mutexDeInstanciaUnica;
+    private bool _encerramentoConcluido;
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int MessageBox(nint hWnd, string texto, string titulo, uint tipo);
@@ -219,13 +220,20 @@ public partial class App : Application
                 desktop.MainWindow = licencaWindow;
             }
 
-            desktop.ShutdownRequested += (_, _) =>
+            // ATENÇÃO: nunca trocar isto de volta por ".GetAwaiter().GetResult()" direto no
+            // evento. ShutdownRequested roda na thread de UI, e qualquer await lá dentro (ASP.NET
+            // Core/SignalR/EF Core podem ter algum) tenta retomar na MESMA thread de UI — que
+            // já estaria bloqueada esperando o resultado. Deadlock permanente: o processo nunca
+            // termina, fica pra sempre no Gerenciador de Tarefas (achado testando de verdade,
+            // não em teste unitário — isso não aparece sem um shutdown real do SO). O jeito
+            // certo é cancelar o fechamento, limpar em segundo plano SEM bloquear a UI, e pedir
+            // o fechamento de novo quando a limpeza terminar.
+            desktop.ShutdownRequested += (_, e) =>
             {
-                _servidorDoPainel?.PararAsync().GetAwaiter().GetResult();
-                _escopoDaSessao?.Dispose();
-                _host.StopAsync().GetAwaiter().GetResult();
-                _host.Dispose();
-                _mutexDeInstanciaUnica?.ReleaseMutex();
+                if (_encerramentoConcluido) return;
+
+                e.Cancel = true;
+                _ = EncerrarEFecharAsync();
             };
         }
 
@@ -233,6 +241,27 @@ public partial class App : Application
     }
 
     /// <summary>Dispara uma sincronização fora do ciclo periódico — mesmo padrão best-effort do <see cref="SincronizadorEmSegundoPlano"/> (falha silenciosa, nunca trava a UI).</summary>
+    /// <summary>Limpeza de fechamento de verdade assíncrona (ver o comentário em cima de <c>ShutdownRequested</c>) — nada aqui bloqueia a thread de UI.</summary>
+    private async Task EncerrarEFecharAsync()
+    {
+        try
+        {
+            if (_servidorDoPainel is not null) await _servidorDoPainel.PararAsync();
+            _escopoDaSessao?.Dispose();
+            if (_host is not null)
+            {
+                await _host.StopAsync();
+                _host.Dispose();
+            }
+        }
+        finally
+        {
+            _mutexDeInstanciaUnica?.ReleaseMutex();
+            _encerramentoConcluido = true;
+            _desktop?.Shutdown();
+        }
+    }
+
     private void DispararSincronizacaoImediata()
     {
         var scopeFactory = _host!.Services.GetRequiredService<IServiceScopeFactory>();
