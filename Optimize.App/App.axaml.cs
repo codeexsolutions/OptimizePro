@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -205,6 +206,13 @@ public partial class App : Application
                         return;
                     }
 
+                    // Sem isto, a primeira sincronização (a única que provisiona a instalação
+                    // na Central) já tinha rodado e falhado no exato instante em que o host
+                    // subiu (_host.Start(), acima) — ANTES da licença existir — e o app só
+                    // tentaria de novo 10 minutos depois (intervalo do
+                    // SincronizadorEmSegundoPlano). Acabou de ativar: dispara uma tentativa
+                    // imediata, sem esperar o próximo ciclo.
+                    DispararSincronizacaoImediata();
                     EntrarNoAppPrincipal(exibirManualmente: true);
                 };
 
@@ -222,6 +230,19 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>Dispara uma sincronização fora do ciclo periódico — mesmo padrão best-effort do <see cref="SincronizadorEmSegundoPlano"/> (falha silenciosa, nunca trava a UI).</summary>
+    private void DispararSincronizacaoImediata()
+    {
+        var scopeFactory = _host!.Services.GetRequiredService<IServiceScopeFactory>();
+        _ = Task.Run(async () =>
+        {
+            using var escopo = scopeFactory.CreateScope();
+            var servico = escopo.ServiceProvider.GetRequiredService<SincronizacaoService>();
+            try { await servico.SincronizarAsync(); }
+            catch { /* best-effort: rede, Central fora do ar etc. — o ciclo periódico tenta de novo depois */ }
+        });
     }
 
     private MainWindow CriarMainWindow()
