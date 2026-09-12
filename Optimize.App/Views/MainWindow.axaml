@@ -185,6 +185,13 @@
             <StackPanel Margin="16,0,16,16" Spacing="8">
                 <!-- Gate de módulos (§25) — só aparece pra quem realmente logou; sem sessão de
                      painel (instalação que nunca configurou usuário), não tem "sair" nem sentido. -->
+                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding PodeSair}">
+                    <Ellipse Width="7" Height="7" Fill="{DynamicResource PincelSucesso}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding NomeDoUsuarioLogado}" FontSize="12" FontWeight="Medium"
+                               Foreground="{DynamicResource PincelTinta}" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+
                 <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding PodeSair}">
                     <Button Grid.Column="0" Content="Sincronizar" Command="{Binding SincronizarCommand}" IsEnabled="{Binding !Sincronizando}"
                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"

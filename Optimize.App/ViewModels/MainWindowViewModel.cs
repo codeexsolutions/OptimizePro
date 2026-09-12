@@ -62,6 +62,9 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>Botão "Sair" só faz sentido se o gate estiver ativo (alguém realmente logou) — sem isso, "sair" levaria pra uma tela de login que nem deveria aparecer.</summary>
     public bool PodeSair => _sessao.UsuarioAtual is not null;
 
+    /// <summary>Nome de quem logou (§25) — só existe junto com <see cref="PodeSair"/>; instalação sem gate de usuário não tem ninguém "logado" pra mostrar.</summary>
+    public string? NomeDoUsuarioLogado => _sessao.UsuarioAtual?.Nome;
+
     [ObservableProperty]
     public partial bool Sincronizando { get; set; }
 
