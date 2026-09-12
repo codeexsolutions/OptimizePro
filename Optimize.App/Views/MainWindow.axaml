@@ -24,29 +24,12 @@
                         OpenPaneLength="244"
                         SelectionChanged="NavPrincipal_OnSelectionChanged">
 
-        <!-- Selo + nome, igual ao topo do menu lateral da referência (Menu.tsx). -->
-        <ui:NavigationView.PaneHeader>
-            <StackPanel Orientation="Horizontal" Spacing="11" Margin="7,10,0,18">
-                <Border Width="40" Height="40" CornerRadius="11"
-                        Background="{DynamicResource PincelAmbar}"
-                        BorderBrush="{DynamicResource PincelAmbarLinha}" BorderThickness="1">
-                    <TextBlock Text="OP" FontFamily="{DynamicResource FonteTitulo}" FontWeight="Bold" FontSize="13"
-                               LetterSpacing="-0.3"
-                               Foreground="{DynamicResource PincelAmbarTinta}"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <StackPanel Spacing="1" VerticalAlignment="Center">
-                    <TextBlock Text="Optimize Pro" FontSize="16.3" FontWeight="Bold" LetterSpacing="0.1"
-                               Foreground="{DynamicResource PincelTinta}" LineHeight="18" />
-                    <TextBlock Text="Moldes &amp; encaixe" FontSize="10.9" LetterSpacing="0.3"
-                               Foreground="{DynamicResource PincelTintaApagada}" LineHeight="14" />
-                </StackPanel>
-            </StackPanel>
-        </ui:NavigationView.PaneHeader>
-
-        <!-- Lista só — sem cabeçalho de seção (§ decisão: mantém Disparo/Configurações, mas
-             numa lista única, como a referência faz com as 4 telas dela). -->
+        <!-- Seções (PRODUÇÃO/DESIGN/IMPRESSÃO/RELATÓRIOS/...) alinhadas com a sidebar do
+             optmize-full (12/09/2026, pedido do usuário depois de comparar as duas telas lado a
+             lado) — antes era uma lista só, sem cabeçalho de seção nenhum. O selo/marca saiu
+             daqui e foi pro rodapé (PaneFooter), mesmo lugar que a referência usa. -->
         <ui:NavigationView.MenuItems>
+            <ui:NavigationViewItemHeader Content="PRODUÇÃO" />
             <ui:NavigationViewItem Tag="Moldes" IsSelected="True" AutomationProperties.Name="Moldes">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="Cut" />
@@ -80,6 +63,7 @@
                     </StackPanel>
                 </ui:NavigationViewItem.Content>
             </ui:NavigationViewItem>
+            <ui:NavigationViewItemHeader Content="DESIGN" />
             <ui:NavigationViewItem Tag="Vetor" AutomationProperties.Name="Vetor">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="ImageEdit" />
@@ -91,6 +75,8 @@
                     </StackPanel>
                 </ui:NavigationViewItem.Content>
             </ui:NavigationViewItem>
+
+            <ui:NavigationViewItemHeader Content="IMPRESSÃO" />
             <ui:NavigationViewItem Tag="Impressoras" AutomationProperties.Name="Impressoras" IsVisible="{Binding PodeVerImpressoras}">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="Print" />
@@ -113,6 +99,7 @@
                     </StackPanel>
                 </ui:NavigationViewItem.Content>
             </ui:NavigationViewItem>
+            <ui:NavigationViewItemHeader Content="RELATÓRIOS" />
             <ui:NavigationViewItem Tag="Historico" AutomationProperties.Name="Histórico" IsVisible="{Binding PodeVerHistorico}">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="Document" />
@@ -135,6 +122,7 @@
                     </StackPanel>
                 </ui:NavigationViewItem.Content>
             </ui:NavigationViewItem>
+            <ui:NavigationViewItemHeader Content="FILA" />
             <ui:NavigationViewItem Tag="Pedidos" AutomationProperties.Name="Pedidos" IsVisible="{Binding PodeVerPedidos}">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="List" />
@@ -157,6 +145,7 @@
                     </StackPanel>
                 </ui:NavigationViewItem.Content>
             </ui:NavigationViewItem>
+            <ui:NavigationViewItemHeader Content="COMUNICAÇÃO" />
             <ui:NavigationViewItem Tag="Disparo" AutomationProperties.Name="Disparo">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="Send" />
@@ -168,6 +157,7 @@
                     </StackPanel>
                 </ui:NavigationViewItem.Content>
             </ui:NavigationViewItem>
+            <ui:NavigationViewItemHeader Content="SISTEMA" />
             <ui:NavigationViewItem Tag="Configuracoes" AutomationProperties.Name="Configurações">
                 <ui:NavigationViewItem.IconSource>
                     <ui:SymbolIconSource Symbol="Settings" />
@@ -204,6 +194,25 @@
                     <Ellipse Width="8" Height="8" Fill="{DynamicResource PincelAmbar}" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding StatusWhatsApp, StringFormat='WhatsApp: {0}'}"
                                FontSize="12" Foreground="{DynamicResource PincelTintaFraca}" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Selo + nome no rodapé, não mais no topo (12/09/2026, pra bater com a
+                     posição da marca na sidebar do optmize-full). -->
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                    <Border Width="26" Height="26" CornerRadius="8"
+                            Background="{DynamicResource PincelAmbar}"
+                            BorderBrush="{DynamicResource PincelAmbarLinha}" BorderThickness="1">
+                        <TextBlock Text="OP" FontFamily="{DynamicResource FonteTitulo}" FontWeight="Bold" FontSize="9.5"
+                                   LetterSpacing="-0.3"
+                                   Foreground="{DynamicResource PincelAmbarTinta}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Spacing="0" VerticalAlignment="Center">
+                        <TextBlock Text="Optimize Pro" FontSize="12.5" FontWeight="Bold" LetterSpacing="0.1"
+                                   Foreground="{DynamicResource PincelTinta}" LineHeight="15" />
+                        <TextBlock Text="Moldes &amp; encaixe" FontSize="9.7" LetterSpacing="0.2"
+                                   Foreground="{DynamicResource PincelTintaApagada}" LineHeight="12" />
+                    </StackPanel>
                 </StackPanel>
 
                 <TextBlock Text="{Binding VersaoDoApp}" FontSize="10.5"

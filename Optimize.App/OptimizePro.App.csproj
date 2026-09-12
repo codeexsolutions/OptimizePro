@@ -8,7 +8,7 @@
 
     <!-- Vira as propriedades do arquivo (Explorer → botão direito → Propriedades → Detalhes)
          e o que aparece no rodapé do app (ver MainWindowViewModel.VersaoDoApp). -->
-    <Version>1.0.8</Version>
+    <Version>1.0.9</Version>
     <Product>Optimize Pro</Product>
     <Company>Codeex Solutions</Company>
     <Copyright>© Codeex Solutions</Copyright>
